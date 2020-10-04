@@ -1,0 +1,136 @@
+#include "shelllib.h"
+
+typedef struct	s_var
+{
+	char	buff[2];
+	char	*command;
+	int		shell;
+}				t_var;
+
+int	ft_strcmp(char *str, char *str2)
+{
+	int i;
+
+	i = 0;
+	if (ft_strlen(str) != ft_strlen(str2))
+		return (0);
+	while (str[i])
+	{
+		if (str[i] != str2[i])
+			return (0);
+		i++;
+	}
+	return (1);
+}
+
+void	closeTerminal(void)
+{
+	exit (0);
+}
+
+void	commandPwd(void)
+{
+	char pwd[PATH_MAX];
+
+	getcwd(pwd, sizeof(pwd));
+	ft_fprintf(1, "%s", pwd);
+}
+
+int	initShell(void)
+{
+	const char *termName;
+	char  *bp;
+	char  *terminal;
+	int   height;
+	int   width;
+
+	bp = malloc(sizeof(*bp));
+	termName = "TERM";
+	if (!(terminal = getenv(termName)))
+		closeTerminal();
+	tgetent(bp, terminal);
+	free(bp);
+	ft_fprintf(1, "\n");
+	ft_fprintf(1, "minishell");
+	ft_fprintf(1, "_> ");
+	return (1);
+}
+
+void	commandClear(void)
+{
+	char *str;
+
+	str = NULL;
+	str = tgetstr("cl", NULL);
+	ft_fprintf(0, "%s", str);
+}
+
+void	cmd_mv_cursor()
+{
+	char *cm_cap;
+
+	cm_cap = tgetstr("cm", NULL);
+	tputs(tgoto(cm_cap, 5, 5), 1, putchar);
+}
+
+void	test(void)
+{
+	tcgetattr(STDIN_FILENO, &orig);
+}
+
+void	noncanon(void)
+{	
+	tcgetattr(STDIN_FILENO, &orig);
+	atexit(test);
+	canon = orig;
+	canon.c_lflag &= ~(ICANON);
+	tcsetattr(STDIN_FILENO, TCSAFLUSH, &canon);
+}
+
+void	init_struct(t_var *var)
+{
+	var->command = NULL;
+	var->shell = 0;
+}
+
+int		getbuff(int fd, char **buff, size_t size)
+{
+	int ret;
+
+	ret = 0;
+	
+	ret = read(STDIN_FILENO, buff, size);
+	*buff[1] = '\0';
+	if (!ret)
+		return (0);
+	else
+		return (*buff[0] == '\n' ? 1 : -1);
+}
+
+void	get_cmd(t_var *var)
+{
+	char *buff;
+
+	buff = var->buff;
+	while (!getbuff(STDIN_FILENO, &buff, 1))
+	{
+		var->buff[0] = buff[0];
+		var->buff[1] = buff[1];
+		var->command = var->command ? ft_strjoin(command, var->buff) : ft_strdup(var->buff);
+	}
+}
+
+int	main(int argc, char **argv)
+{
+	t_var var;
+
+	noncanon();
+	commandClear();
+	initShell();
+	init_struct(&var);
+	while (1)
+	{
+		get_cmd(&var);
+	}
+	return (0);
+}
