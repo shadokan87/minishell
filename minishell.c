@@ -1,4 +1,5 @@
 #include "shelllib.h"
+#define DEBUG ft_fprintf(STDOUT_FILENO,
 
 typedef struct	s_var
 {
@@ -9,6 +10,7 @@ typedef struct	s_var
 	int		fd;
 	int		cursor;
 	int		cursor_pos;
+	int		debug;
 }				t_var;
 
 char	*ft_strndup(char *str, int len)
@@ -46,6 +48,74 @@ int	ft_strcmp(char *str, char *str2)
 	return (1);
 }
 
+//linked list start//
+
+typedef struct s_queue
+{
+	char *command;
+	struct s_queue * next;
+	struct s_queue * prev;
+}			t_queue;
+
+t_queue *add(char *str)
+{
+	t_queue *ret;
+
+	if (!(ret = malloc(sizeof(t_queue))))
+		return (NULL);
+	ret->command = ft_strdup(str);
+	ret->next = NULL;
+	ret->prev = NULL;
+	return (ret);
+}
+
+void	printlist(t_queue *head)
+{
+	t_queue *tmp;
+
+	tmp = head;
+	while (tmp)
+	{
+		ft_fprintf(STDOUT_FILENO, "\n Queue : %s - ", tmp->command);
+		tmp = tmp->next;
+	}
+}
+
+void	init_queue(t_queue **queue, t_queue **head)
+{
+	*queue = NULL;
+	*head = NULL;
+}
+
+void	create_queue(t_queue **queue, t_queue **head, char *str)
+{
+	*queue = add(str);
+	*head = *queue;
+}
+
+void	*add_to_head(t_queue **head, char *str)
+{
+	t_queue *new;
+	t_queue *head2;
+
+	new = add(str);
+	new->prev = *head;
+	new->next = *head;
+	*head = new;
+}
+
+int		enqueue(t_queue **queue, t_queue **head, char *str)
+{
+	t_queue *head2;
+	t_queue *new;
+
+	head2 = NULL;
+	if (!*queue)
+		create_queue(queue, head, str);
+	else
+		add_to_head(head, str);
+}
+// linked list end //
 void	closeTerminal(void)
 {
 	exit (0);
@@ -110,22 +180,49 @@ void	noncanon(void)
 	tcsetattr(STDIN_FILENO, TCSAFLUSH, &canon);
 }
 
-void	init_struct(t_var *var)
+void	init_struct(t_var *var, t_queue **queue, t_queue **head)
 {
 	var->command = NULL;
 	var->shell = 0;
 	var->cursor = 0;
 	var->command_queue = NULL;
+	*queue = NULL;
+	*head = NULL;
 }
 
-void	exec_cmd(t_var *var)
+int		trim_cmd(t_var *var)
 {
-	var->cursor = 0;
-	ft_fprintf(STDOUT_FILENO, "\nCommnad: %s", var->command);
-	ft_fprintf(var->fd, "%s\n", var->command);
-	free(var->command);
-	var->command = NULL;
-	initShell();
+	char *str;
+	char **split;
+	int i;
+	
+	i = 0;
+	str = NULL;
+	split = NULL;
+	while (var->command[i])
+	{
+		if (var->command[i] == '&' && var->command[i + 1] != '&')
+			ft_putchar_str(&str, '\033');
+		else if (!(var->command[i] == '&' && var->command[i + 1]))
+			ft_putchar_str(&str, var->command[i]);
+		else
+			ft_putchar_str(&str, var->command[i]);
+		i++;
+	}
+	split = ft_split(str, '&');
+	i = 0;
+	while (split[i])
+	{
+		DEBUG "\nQueue: %s", split[i]);
+		i++;
+	}
+	//DEBUG "%s", str);
+}
+
+int		process_cmd(t_var *var, t_queue **queue, t_queue **head)
+{
+	trim_cmd(var);
+	return (2);
 }
 
 void	del_char(t_var *var, int len)
@@ -260,22 +357,22 @@ void	pop_in(t_var *var)
 	set_cursor_pos(var, var->cursor_pos);
 }
 
-void	get_cmd(t_var *var)
+int		get_cmd(t_var *var, t_queue **queue, t_queue **head)
 {
 		if (!(var->buff[0] == EOF || var->buff[0] == '\n'))
 		{
 			if (ft_strlen(var->command) && !(var->cursor == ft_strlen(var->command) + 1))
 			{
 				pop_in(var);
-				//ft_fprintf(STDOUT_FILENO, "\nDebug\n%s\n%s\n%s", ft_strndup(var->command, var->cursor - 1), ft_strjoin(ft_strndup(var->command, var->cursor - 1), var->buff), ft_strdup(var->command + var->cursor - 1));
-				return ;
+				return (1);
 			}
 			ft_fprintf(STDOUT_FILENO, "%s", var->buff);
 			var->command = var->command ? ft_strjoin(var->command, var->buff) :
 			ft_strdup(var->buff);
 		}
 		else
-			exec_cmd(var);
+			return (process_cmd(var, queue, head));
+		return (0);
 }
 
 void	clearbuff(t_var *var)
@@ -293,14 +390,20 @@ void	clearbuff(t_var *var)
 int	main(int argc, char **argv)
 {
 	t_var var;
+	t_queue *queue;
+	t_queue *head;
+	t_queue *print;
 
+
+	int count = 0;
 	noncanon();
 	commandClear();
 	initShell();
-	init_struct(&var);
+	init_struct(&var, &queue, &head);
 	var.fd = open(HPATH, O_RDWR | O_CREAT | O_APPEND | O_TRUNC);
+	var.debug = 0;
 	if (!var.fd)
-		ft_fprintf(STDOUT_FILENO, "fd err");;
+		ft_fprintf(STDOUT_FILENO, "fd err");
 	while (1)
 	{
 		clearbuff(&var);
@@ -311,8 +414,16 @@ int	main(int argc, char **argv)
 			var.cursor -= ft_strlen(var.buff);
 			stream(&var);
 		}
-		else
-			get_cmd(&var);
+		else if (get_cmd(&var, &queue, &head) == 2)
+		{
+			print = head;
+			while (print)
+			{
+				DEBUG "%s", print->command);
+				print = print->next;
+			}
+			exit (0);
+		}
 	}
 	close(var.fd);
 	return (0);
