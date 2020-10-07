@@ -95,19 +95,38 @@ void	create_queue(t_queue **queue, t_queue **head, char *str)
 
 void	*add_to_head(t_queue **head, char *str)
 {
+	/*
 	t_queue *new;
 	t_queue *head2;
 
+	head2 = *head;
 	new = add(str);
-	new->prev = *head;
+	head2->prev = new;
+	free(head2);
 	new->next = *head;
 	*head = new;
+	head2 = *head;
+	if (head2->prev)
+	DEBUG "%s", head2->prev->command);
+	exit (0);
+	*/
+	t_queue *head2;
+	t_queue *new;
+	t_queue *tmp;
+	
+	tmp = *head;
+	head2 = NULL;
+	head2 = *head;
+	new = add(str);
+	head2->prev = new;
+	new->next = head2;
+	head2 = new;
+	*head = head2;
 }
 
 int		enqueue(t_queue **queue, t_queue **head, char *str)
 {
 	t_queue *head2;
-	t_queue *new;
 
 	head2 = NULL;
 	if (!*queue)
@@ -126,7 +145,7 @@ void	commandPwd(void)
 	char pwd[PATH_MAX];
 
 	getcwd(pwd, sizeof(pwd));
-	ft_fprintf(1, "%s", pwd);
+	ft_fprintf(STDOUT_FILENO, "\n%s", pwd);
 }
 
 int	initShell(void)
@@ -190,16 +209,23 @@ void	init_struct(t_var *var, t_queue **queue, t_queue **head)
 	*head = NULL;
 }
 
-int		trim_cmd(t_var *var)
+void	reset(t_var *var, t_queue **queue, t_queue **head)
+{
+	initShell();
+	init_struct(var, queue, head);
+	free(var->command);
+}
+
+int		trim_cmd(t_var *var, t_queue **queue, t_queue **head)
 {
 	char *str;
 	char **split;
 	int i;
 	
-	i = 0;
+	i = -1;
 	str = NULL;
 	split = NULL;
-	while (var->command[i])
+	while (var->command[++i])
 	{
 		if (var->command[i] == '&' && var->command[i + 1] != '&')
 			ft_putchar_str(&str, '\033');
@@ -207,21 +233,60 @@ int		trim_cmd(t_var *var)
 			ft_putchar_str(&str, var->command[i]);
 		else
 			ft_putchar_str(&str, var->command[i]);
-		i++;
 	}
 	split = ft_split(str, '&');
 	i = 0;
 	while (split[i])
 	{
-		DEBUG "\nQueue: %s", split[i]);
+		enqueue(queue, head, split[i]);
+		free(split[i]);
 		i++;
 	}
-	//DEBUG "%s", str);
+	free(split);
+	return (i);
+}
+ 
+int		execute_command(char *command)
+{
+	if (ft_strcmp(command, "pwd"))
+		commandPwd();
+	return (1);
+}
+
+t_queue *get_tail(t_queue **head)
+{
+	t_queue *ret;
+	t_queue *tmp;
+
+	tmp = NULL;
+	ret = NULL;
+	ret = *head;
+	tmp = *head;
+	while (tmp)
+	{
+		tmp = tmp->next;
+		ret = tmp ? tmp : ret;
+	}
+	return (ret);
 }
 
 int		process_cmd(t_var *var, t_queue **queue, t_queue **head)
 {
-	trim_cmd(var);
+	int command_num;
+	t_queue *tail;
+
+	tail = NULL;
+	command_num = trim_cmd(var, queue, head);
+	tail = get_tail(head);
+	while (tail != *head)
+	{
+		execute_command(tail->command);
+		tail = tail->prev;
+	}
+	execute_command(tail->command);
+	free(var->command);
+	//DEBUG "%s", tail->command);
+	//exit (0);
 	return (2);
 }
 
@@ -370,8 +435,10 @@ int		get_cmd(t_var *var, t_queue **queue, t_queue **head)
 			var->command = var->command ? ft_strjoin(var->command, var->buff) :
 			ft_strdup(var->buff);
 		}
-		else
+		else if (ft_strlen(var->command))
 			return (process_cmd(var, queue, head));
+		else
+			reset(var, queue, head);
 		return (0);
 }
 
@@ -397,7 +464,7 @@ int	main(int argc, char **argv)
 
 	int count = 0;
 	noncanon();
-	commandClear();
+	//commandClear();
 	initShell();
 	init_struct(&var, &queue, &head);
 	var.fd = open(HPATH, O_RDWR | O_CREAT | O_APPEND | O_TRUNC);
@@ -415,15 +482,7 @@ int	main(int argc, char **argv)
 			stream(&var);
 		}
 		else if (get_cmd(&var, &queue, &head) == 2)
-		{
-			print = head;
-			while (print)
-			{
-				DEBUG "%s", print->command);
-				print = print->next;
-			}
-			exit (0);
-		}
+			reset(&var, &queue, &head);
 	}
 	close(var.fd);
 	return (0);
