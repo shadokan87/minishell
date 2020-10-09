@@ -13,6 +13,7 @@ typedef struct	s_var
 	char	buff[BUFFER_SIZE];
 	char	*command;
 	char	*command_queue;
+	char	*to_free;
 	int		shell;
 	int		fd;
 	int		cursor;
@@ -197,7 +198,6 @@ void	init_struct(t_var *var, t_queue **queue, t_queue **head)
 	var->command_queue = NULL;
 	*queue = NULL;
 	*head = NULL;
-	var->display_pos = NULL;
 }
 
 t_queue *get_tail(t_queue **head)
@@ -226,6 +226,7 @@ int		init_history(t_var *var)
 	var->history = NULL;
 	var->h_head = NULL;
 	var->h_tail = NULL;
+	var->to_free = NULL;
 	var->fd = open(HPATH, O_RDWR | O_APPEND);
 	while ((get_next_line(var->fd, &command)))
 		enqueue(&var->history, &var->h_head, command);
@@ -256,6 +257,7 @@ void	reset(t_var *var, t_queue **queue, t_queue **head)
 		update_history(var);
 	var->command ? free(var->command) : 0;
 	init_struct(var, queue, head);
+	var->display_pos = var->h_head;
 }
 
 int		trim_cmd(t_var *var, t_queue **queue, t_queue **head)
@@ -320,6 +322,11 @@ int		process_cmd(t_var *var, t_queue **queue, t_queue **head)
 	tail = NULL;
 	command_num = trim_cmd(var, queue, head);
 	tail = get_tail(head);
+	if (var->to_free)
+	{
+		free(var->to_free);
+		var->to_free = NULL;
+	}
 	while (tail != *head)
 	{
 		execute_command(tail->command);
@@ -426,20 +433,26 @@ void	clearbuff(t_var *var)
 	}
 }
 
-void	overrite_command(t_var *var, char *str)
+int		overrite_command(t_var *var, char *command)
 {
+	char *to_free;
+	
+	to_free = NULL;
 	if (var->command)
 	{
-		while (keyright(var));
-		del_char(var, ft_strlen(var->command));
+		to_free = var->command;
+		clear_prompt(var, 0);
 	}
-	var->command = ft_strdup(str);
+	var->command = ft_strdup(command);
 	ft_fprintf(STDOUT_FILENO, "%s", var->command);
 	var->cursor = ft_strlen(var->command);
+	return (1);
 }
 
 int		keyup(t_var *var)
 {
+	if (!var->to_free)
+		var->to_free = ft_strdup(var->command);
 	if (!var->h_head)
 		return (0);
 	overrite_command(var, var->display_pos->command);
@@ -449,11 +462,10 @@ int		keyup(t_var *var)
 
 int		keydown(t_var *var)
 {
-	if (!var->h_head)
+	if (!var->h_head || !var->display_pos->prev->prev)
 		return (0);
-	overrite_command(var, var->display_pos->command);
-	if (var->display_pos->prev)
-		var->display_pos = var->display_pos->prev;
+	overrite_command(var, var->display_pos->prev->prev->command);
+	var->display_pos = var->display_pos->prev;
 }
 
 int		stream(t_var *var)
