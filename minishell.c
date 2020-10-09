@@ -1,6 +1,13 @@
 #include "shelllib.h"
 #define DEBUG ft_fprintf(STDOUT_FILENO,
 
+typedef struct s_queue
+{
+	char *command;
+	struct s_queue * next;
+	struct s_queue * prev;
+}			t_queue;
+
 typedef struct	s_var
 {
 	char	buff[BUFFER_SIZE];
@@ -11,9 +18,14 @@ typedef struct	s_var
 	int		cursor;
 	int		cursor_pos;
 	int		debug;
+	int		launch_status;
+	t_queue	*history;
+	t_queue *h_head;
+	t_queue *h_tail;
+	t_queue *display_pos;
 }				t_var;
 
-char	*ft_strndup(char *str, int len)
+static char	*strndup(char *str, int len)
 {
 	char	*ret;
 	int		i;
@@ -49,13 +61,6 @@ int	ft_strcmp(char *str, char *str2)
 }
 
 //linked list start//
-
-typedef struct s_queue
-{
-	char *command;
-	struct s_queue * next;
-	struct s_queue * prev;
-}			t_queue;
 
 t_queue *add(char *str)
 {
@@ -95,21 +100,6 @@ void	create_queue(t_queue **queue, t_queue **head, char *str)
 
 void	*add_to_head(t_queue **head, char *str)
 {
-	/*
-	t_queue *new;
-	t_queue *head2;
-
-	head2 = *head;
-	new = add(str);
-	head2->prev = new;
-	free(head2);
-	new->next = *head;
-	*head = new;
-	head2 = *head;
-	if (head2->prev)
-	DEBUG "%s", head2->prev->command);
-	exit (0);
-	*/
 	t_queue *head2;
 	t_queue *new;
 	t_queue *tmp;
@@ -207,50 +197,7 @@ void	init_struct(t_var *var, t_queue **queue, t_queue **head)
 	var->command_queue = NULL;
 	*queue = NULL;
 	*head = NULL;
-}
-
-void	reset(t_var *var, t_queue **queue, t_queue **head)
-{
-	initShell();
-	init_struct(var, queue, head);
-	free(var->command);
-}
-
-int		trim_cmd(t_var *var, t_queue **queue, t_queue **head)
-{
-	char *str;
-	char **split;
-	int i;
-	
-	i = -1;
-	str = NULL;
-	split = NULL;
-	while (var->command[++i])
-	{
-		if (var->command[i] == '&' && var->command[i + 1] != '&')
-			ft_putchar_str(&str, '\033');
-		else if (!(var->command[i] == '&' && var->command[i + 1]))
-			ft_putchar_str(&str, var->command[i]);
-		else
-			ft_putchar_str(&str, var->command[i]);
-	}
-	split = ft_split(str, '&');
-	i = 0;
-	while (split[i])
-	{
-		enqueue(queue, head, split[i]);
-		free(split[i]);
-		i++;
-	}
-	free(split);
-	return (i);
-}
- 
-int		execute_command(char *command)
-{
-	if (ft_strcmp(command, "pwd"))
-		commandPwd();
-	return (1);
+	var->display_pos = NULL;
 }
 
 t_queue *get_tail(t_queue **head)
@@ -270,6 +217,101 @@ t_queue *get_tail(t_queue **head)
 	return (ret);
 }
 
+int		init_history(t_var *var)
+{
+	char *command;
+	int ret;
+
+	ret = -1;
+	var->history = NULL;
+	var->h_head = NULL;
+	var->h_tail = NULL;
+	var->fd = open(HPATH, O_RDWR | O_APPEND);
+	while ((get_next_line(var->fd, &command)))
+		enqueue(&var->history, &var->h_head, command);
+	var->display_pos = var->h_head;
+	//var->h_tail = get_tail(&var->h_head);
+}
+
+int		update_history(t_var *var)
+{
+	if (!var->h_head)
+	{
+		ft_fprintf(var->fd, "%s\n", var->command);
+		init_history(var);
+		return (0);
+	}
+	else if (!ft_strcmp(var->h_head->command, var->command) && ft_strlen(var->command))
+	{
+		ft_fprintf(var->fd, "%s\n", var->command);
+		enqueue(&var->history, &var->h_head, var->command);
+	}
+	return (1);
+}
+
+void	reset(t_var *var, t_queue **queue, t_queue **head)
+{
+	initShell();
+	if (var->command && ft_strlen(var->command))
+		update_history(var);
+	var->command ? free(var->command) : 0;
+	init_struct(var, queue, head);
+}
+
+int		trim_cmd(t_var *var, t_queue **queue, t_queue **head)
+{
+	char *str;
+	char **split;
+	int i;
+	
+	i = -1;
+	str = NULL;
+	split = NULL;
+	while (var->command[++i])
+	{
+		if (var->command[i] == '&' && var->command[i + 1] != '&')
+			var->command[i - 1] == '&' ? 0 : ft_putchar_str(&str, '\033');
+		else if (!(var->command[i] == '&' && var->command[i + 1]))
+			ft_putchar_str(&str, var->command[i]);
+		else
+			ft_putchar_str(&str, var->command[i]);
+	}
+	split = ft_split(str, '&');
+	i = 0;
+	while (split[i])
+	{
+		enqueue(queue, head, split[i]);
+		free(split[i]);
+		i++;
+	}
+	free(split);
+	return (i);
+}
+ 
+char	*nonstrict(char *command)
+{
+	int i;
+	char *ret;
+
+	i = 0;
+	ret = NULL;
+	while (command[i] && command[i] == ' ')
+		i++;
+	while (command[i] && command [i] != ' ')
+	{
+		ft_putchar_str(&ret, command[i]);
+		i++;
+	}
+	return (ret);
+}
+
+int		execute_command(char *command)
+{
+	if (ft_strcmp("pwd", nonstrict(command)))
+		commandPwd();
+	return (1);
+}
+
 int		process_cmd(t_var *var, t_queue **queue, t_queue **head)
 {
 	int command_num;
@@ -284,9 +326,6 @@ int		process_cmd(t_var *var, t_queue **queue, t_queue **head)
 		tail = tail->prev;
 	}
 	execute_command(tail->command);
-	free(var->command);
-	//DEBUG "%s", tail->command);
-	//exit (0);
 	return (2);
 }
 
@@ -350,10 +389,7 @@ void	set_cursor_pos(t_var *var, int pos)
 
 	i = 0;
 	while (var->cursor != pos)
-	{
 		keyleft(var);
-	}
-	//ft_fprintf(STDOUT_FILENO, "%d", var->cursor - var->cursor_pos - 1);
 }
 
 void	substitute(t_var *var)
@@ -366,7 +402,7 @@ void	substitute(t_var *var)
 	//ft_fprintf(STDOUT_FILENO, "\b \b");
 	//clear_prompt(var);
 	//ft_fprintf(STDOUT_FILENO, "%s", var->command);
-	left_cut = ft_strndup(var->command, var->cursor - 1);
+	left_cut = strndup(var->command, var->cursor - 1);
 	right_cut = ft_strdup(var->command + var->cursor);
 	var->cursor_pos = var->cursor - 1;
 	clear_prompt(var, 0);
@@ -378,14 +414,46 @@ void	substitute(t_var *var)
 	set_cursor_pos(var, var->cursor_pos);
 }
 
-void	keyup(t_var *var)
+void	clearbuff(t_var *var)
 {
-	char *cursor;
+	int i;
+	
+	i = 0;
+	while (i < BUFFER_SIZE)
+	{
+		var->buff[i] = (char)0;
+		i++;
+	}
+}
 
-	cursor = tgetstr("cm", NULL);
-	write(1, "\033[6n", 4);
-	//ft_fprintf(STDOUT_FILENO, "%s", tgoto(cursor, 12, 1));
-	//ft_fprintf(STDOUT_FILENO, "KEYUP ");
+void	overrite_command(t_var *var, char *str)
+{
+	if (var->command)
+	{
+		while (keyright(var));
+		del_char(var, ft_strlen(var->command));
+	}
+	var->command = ft_strdup(str);
+	ft_fprintf(STDOUT_FILENO, "%s", var->command);
+	var->cursor = ft_strlen(var->command);
+}
+
+int		keyup(t_var *var)
+{
+	if (!var->h_head)
+		return (0);
+	overrite_command(var, var->display_pos->command);
+	if (var->display_pos->next)
+		var->display_pos = var->display_pos->next;
+}
+
+int		keydown(t_var *var)
+{
+	if (!var->h_head)
+		return (0);
+	overrite_command(var, var->display_pos->command);
+	if (var->display_pos->prev)
+		var->display_pos = var->display_pos->prev;
 }
 
 int		stream(t_var *var)
@@ -399,7 +467,7 @@ int		stream(t_var *var)
 	else if (ft_strcmp(KEYUP, var->buff))
 		keyup(var);
 	else if (ft_strcmp(KEYDOWN, var->buff))
-		ft_fprintf(STDOUT_FILENO, "KEYDOWN ");
+		keydown(var);
 	else if (ft_strcmp(KEYLEFT, var->buff))
 		keyleft(var);
 	else if (ft_strcmp(KEYRIGHT, var->buff))
@@ -413,7 +481,7 @@ void	pop_in(t_var *var)
 	char *right_cut;
 
 	var->cursor_pos = var->cursor;
-	left_cut = ft_strjoin(ft_strndup(var->command, var->cursor - 1), var->buff);
+	left_cut = ft_strjoin(strndup(var->command, var->cursor - 1), var->buff);
 	right_cut = ft_strdup(var->command + var->cursor - 1);
 	free(var->command);
 	var->command = ft_strjoin(left_cut, right_cut);
@@ -442,18 +510,6 @@ int		get_cmd(t_var *var, t_queue **queue, t_queue **head)
 		return (0);
 }
 
-void	clearbuff(t_var *var)
-{
-	int i;
-	
-	i = 0;
-	while (i < BUFFER_SIZE)
-	{
-		var->buff[i] = (char)0;
-		i++;
-	}
-}
-
 int	main(int argc, char **argv)
 {
 	t_var var;
@@ -461,16 +517,10 @@ int	main(int argc, char **argv)
 	t_queue *head;
 	t_queue *print;
 
-
-	int count = 0;
 	noncanon();
-	//commandClear();
 	initShell();
 	init_struct(&var, &queue, &head);
-	var.fd = open(HPATH, O_RDWR | O_CREAT | O_APPEND | O_TRUNC);
-	var.debug = 0;
-	if (!var.fd)
-		ft_fprintf(STDOUT_FILENO, "fd err");
+	init_history(&var);
 	while (1)
 	{
 		clearbuff(&var);

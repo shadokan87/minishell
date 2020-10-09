@@ -1,11 +1,12 @@
 #ifndef SHELLLIB_H
 # define SHELLLIB_H
-# define HPATH "srcs/cmd_H.minishell"
+# define HPATH "srcs/history"
 # define KEYUP "\033[A"
 # define KEYDOWN "\033[B"
 # define KEYLEFT "\033[D"
 # define KEYRIGHT "\033[C"
 # define BUFFER_SIZE 4
+# define LS "ls"
 # include <unistd.h>
 # include <limits.h>
 # include <stdlib.h>
