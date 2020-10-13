@@ -1,5 +1,7 @@
 #ifndef SHELLLIB_H
 # define SHELLLIB_H
+# define COMMANDS "ls pwd echo export unset cd env exit"
+# define SYMBOL_LIST ">> < > |"
 # define HPATH "srcs/history"
 # define KEYUP "\033[A"
 # define KEYDOWN "\033[B"

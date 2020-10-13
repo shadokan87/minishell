@@ -16,10 +16,12 @@ typedef struct	s_var
 	char	*to_free;
 	int		shell;
 	int		fd;
+	int		gfd;
 	int		cursor;
 	int		cursor_pos;
 	int		debug;
 	int		launch_status;
+	int		h_state;
 	t_queue	*history;
 	t_queue *h_head;
 	t_queue *h_tail;
@@ -131,7 +133,7 @@ void	closeTerminal(void)
 	exit (0);
 }
 
-void	commandPwd(void)
+void	commandPwd()
 {
 	char pwd[PATH_MAX];
 
@@ -198,6 +200,7 @@ void	init_struct(t_var *var, t_queue **queue, t_queue **head)
 	var->command_queue = NULL;
 	*queue = NULL;
 	*head = NULL;
+	var->gfd = 0;
 }
 
 t_queue *get_tail(t_queue **head)
@@ -227,6 +230,7 @@ int		init_history(t_var *var)
 	var->h_head = NULL;
 	var->h_tail = NULL;
 	var->to_free = NULL;
+	var->h_state = 0;
 	var->fd = open(HPATH, O_RDWR | O_APPEND);
 	while ((get_next_line(var->fd, &command)))
 		enqueue(&var->history, &var->h_head, command);
@@ -258,6 +262,7 @@ void	reset(t_var *var, t_queue **queue, t_queue **head)
 	var->command ? free(var->command) : 0;
 	init_struct(var, queue, head);
 	var->display_pos = var->h_head;
+	var->h_state = 0;
 }
 
 int		trim_cmd(t_var *var, t_queue **queue, t_queue **head)
@@ -307,11 +312,137 @@ char	*nonstrict(char *command)
 	return (ret);
 }
 
-int		execute_command(char *command)
+int		is_command(char *ret)
 {
-	if (ft_strcmp("pwd", nonstrict(command)))
-		commandPwd();
-	return (1);
+	char **split;
+	int i;
+	
+	i = -1;
+	split = ft_split(COMMANDS, ' ');
+	if (!ret)
+		return (0);
+	while (split[++i])
+		if (ft_strcmp(ret, split[i]))
+			return (1);
+	return (0);
+}
+
+int		is_symbol(char c)
+{	
+	if (c == '<' || c == '>' || c == '|')
+		return (1);
+	return (0);
+}
+
+int		ft_redir(char **split)
+{
+	
+}
+
+char	*get_cmd_format(char *command)
+{
+	char *ret;
+	char *ret2;
+	int	symbol_ret;
+	int state;
+	int i;
+	
+	symbol_ret = 0;
+	ret = NULL;
+	i = 0;
+	while (command[i])
+	{
+		if (!(command[i] == ' ' && command[i - 1] == ' '))
+			ft_putchar_str(&ret, command[i]);
+		if (is_command(ret) && command[i + 1] != ' ')
+			ft_putchar_str(&ret, ' ');
+		if (is_symbol(command[i]) && !is_symbol(command[i + 1]) && command[i + 1] != ' ')
+			ft_putchar_str(&ret, ' ');
+		i++;
+	}
+	return (ret);
+}
+
+int		get_symbol_type(char *str)
+{
+	char **symbol_list;
+	int i;
+
+	i = -1;
+	symbol_list = ft_split(ft_strdup(SYMBOL_LIST), ' ');
+	while (symbol_list[++i])
+		if (ft_strcmp(symbol_list[i], str))
+			return (i);
+	return (-1);
+}
+
+void	throw_error(char *message, char *src)
+{
+	ft_fprintf(STDOUT_FILENO, "%s\"%s\"", message, src);
+}
+
+int		command_is_valid(char **split)
+{
+	int i;
+	int ok;
+
+	i = 0;
+	ok = 1;
+	while (split[i])
+	{
+		if (i == 0 && !(ok = is_command(split[i])))	
+			throw_error("\nInvalid command: ", split[i]);
+		i++;
+	}
+	return (ok);
+}
+
+int		get_fd(char **split)
+{
+	int i;
+
+	i = 0;
+	while (split[i])
+	{
+		if (ft_strcmp(split[i], ">>") && split[i + 1])
+			return (open(split[i + 1], O_WRONLY | O_APPEND | O_CREAT));
+		i++;
+	}
+	return (STDOUT_FILENO);
+}
+
+int		__builtin_echo(char **split)
+{
+	int	fd;
+	int i;
+	int mode;
+
+	fd = get_fd(split);
+}
+
+int		run_command(char *format)
+{
+	char **split;
+	int i;
+	int	ret;
+
+	i = 0;
+	ret = 0;
+	split = NULL;
+	split = ft_split(format, ' ');
+	if (!(ret = command_is_valid(split)))
+		return (0);
+	if (ft_strcmp("echo", split[0]))
+		__builtin_echo(split);
+	return (ret);
+}
+
+int		execute_command(t_var *var, t_queue **queue, t_queue **head, char *command)
+{
+	char *format;
+
+	format = NULL;
+	return (run_command(format = get_cmd_format(command)));
 }
 
 int		process_cmd(t_var *var, t_queue **queue, t_queue **head)
@@ -329,10 +460,10 @@ int		process_cmd(t_var *var, t_queue **queue, t_queue **head)
 	}
 	while (tail != *head)
 	{
-		execute_command(tail->command);
+		execute_command(var, queue, head, tail->command);
 		tail = tail->prev;
 	}
-	execute_command(tail->command);
+	execute_command(var, queue, head, tail->command);
 	return (2);
 }
 
@@ -341,6 +472,7 @@ void	del_char(t_var *var, int len)
 	int i;
 	
 	i = 0;
+	var->to_free ? free(var->to_free) : 0;
 	while (i < len)
 	{
 		ft_fprintf(STDOUT_FILENO, "\b \b");
@@ -354,6 +486,7 @@ void	del_char(t_var *var, int len)
 		free(var->command);
 		var->command = NULL;
 	}
+	var->to_free = ft_strdup(var->command);
 }
 
 int		keyleft(t_var *var)
@@ -419,6 +552,8 @@ void	substitute(t_var *var)
 	ft_fprintf(STDOUT_FILENO, "%s", var->command);
 	var->cursor = ft_strlen(var->command);
 	set_cursor_pos(var, var->cursor_pos);
+	var->to_free ? free(var->to_free) : 0;
+	var->to_free = ft_strdup(var->command);
 }
 
 void	clearbuff(t_var *var)
@@ -435,14 +570,9 @@ void	clearbuff(t_var *var)
 
 int		overrite_command(t_var *var, char *command)
 {
-	char *to_free;
-	
-	to_free = NULL;
-	if (var->command)
-	{
-		to_free = var->command;
-		clear_prompt(var, 0);
-	}
+	if (!command)
+		return (0);
+	clear_prompt(var, 0);
 	var->command = ft_strdup(command);
 	ft_fprintf(STDOUT_FILENO, "%s", var->command);
 	var->cursor = ft_strlen(var->command);
@@ -451,21 +581,38 @@ int		overrite_command(t_var *var, char *command)
 
 int		keyup(t_var *var)
 {
-	if (!var->to_free)
-		var->to_free = ft_strdup(var->command);
 	if (!var->h_head)
 		return (0);
-	overrite_command(var, var->display_pos->command);
-	if (var->display_pos->next)
-		var->display_pos = var->display_pos->next;
+	if (!var->h_state && var->display_pos->next)
+	{
+		if (var->command)
+			var->to_free = ft_strdup(var->command);
+		overrite_command(var, var->display_pos->command);
+		var->h_state = 1;
+	}
+	else
+	{
+		if (var->display_pos->next)
+			var->display_pos = var->display_pos->next;
+		overrite_command(var, var->display_pos->command);
+	}
+	return (0);
 }
 
 int		keydown(t_var *var)
 {
-	if (!var->h_head || !var->display_pos->prev->prev)
+	if (!var->h_head)
 		return (0);
-	overrite_command(var, var->display_pos->prev->prev->command);
-	var->display_pos = var->display_pos->prev;
+	if (var->display_pos->prev)
+		var->display_pos = var->display_pos->prev;
+	else
+	{
+		if (var->to_free)
+			overrite_command(var, var->to_free);
+		return (0);
+	}
+	overrite_command(var, var->display_pos->command);
+	return (0);
 }
 
 int		stream(t_var *var)
@@ -500,6 +647,7 @@ void	pop_in(t_var *var)
 	clear_prompt(var, ft_strlen(var->buff));
 	ft_fprintf(STDOUT_FILENO, "%s", var->command);
 	set_cursor_pos(var, var->cursor_pos);
+	var->to_free ? (var->to_free = ft_strdup(var->command)) : 0;
 }
 
 int		get_cmd(t_var *var, t_queue **queue, t_queue **head)
@@ -514,6 +662,7 @@ int		get_cmd(t_var *var, t_queue **queue, t_queue **head)
 			ft_fprintf(STDOUT_FILENO, "%s", var->buff);
 			var->command = var->command ? ft_strjoin(var->command, var->buff) :
 			ft_strdup(var->buff);
+			var->to_free = ft_strdup(var->command);
 		}
 		else if (ft_strlen(var->command))
 			return (process_cmd(var, queue, head));

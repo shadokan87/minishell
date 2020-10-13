@@ -117,3 +117,4 @@ int	main(void)
 	print = head;
 	printlist(print);
 }
+/Users/shadokan87/Documents/minishell_git

@@ -1,60 +1,139 @@
-test1
+test
 test2
-test3
-ls         s                cspdi                                    uxX%
-ls 
-ls
-ls             s                s                
-ls
-t
-h
-2
-ls
+test23
 test
-t
-ls
-5
-test1
-test1fdddddddddd
-test1fddddddddddaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-test1fddddddddddaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-tset
-test1fddddddddddaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-ls
-test
-ls
-dddpdiuxX%ddiuxX%diuxX%duxX%dxX%dX%d%dddddddd%diuxX%duxX%dxX%dX%dddddddddddddd%ddddddd
-asssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss
-Aasssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss
-test
-test               sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss 
-test test
-test               sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss 
-test1
-tset
-test1fddddddddddaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-test1
-t
-test1fddddddddddaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-test1
-sa
-test               sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss 
+test2
+yes
+pwd
+pwd && pwd
+pwd>>
+pwd>>test
+pwd
+pwd>>test
+pwd >> test
+pwd
+pwd |
+pwd || 
+pwd ||
+pwd
+pwd ||
+pwd &&
+pwd >>
+pwd <<
+pwd ||
+pwd >>
+pwd <<
+pwd >>
+pwd >> test
+ls >> test
+ls ||
+ls <<
+ls<<
+ls||
+ls>>
+ls<<
+ls >> test
+ls||test
+ls>test
+ls>>test
+pwd >> test
+pwd << test
+pwd | test
+pwd || test
+pwd | test
+pwd || test
+pwd | TEST
+pwd || test
+pwd ||Â cat
+pwd || cat
+pwd ||Â cat
+pwd || cat
+pwd || test
+ls || cat
+pwd || test
+test>>test
+test >> test
+>>test
+test>>test
+pwd>>test
+pwd || test
+pwd||test
+pwd > test
+pwd
+pwd test.c
+pwd cat
+cat pwd
+pwd ls
+ls test
+ls test2
+ls -la
+ls *.c
+ls pwd
+ls pwd ls
+pwd >> test
+pwd && pwd
+ls >> test
 ls
 pwd
 test
+lslsls
+./a	
+./a
+ped
+test
+s
+les
+less
 pwd
-Aasssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss
-tset
-ls         s                cspdi                                    uxX%
-dddpdiuxX%ddiuxX%diuxX%duxX%dxX%dX%d%dddddddd%diuxX%duxX%dxX%dX%dddddddddddddd%ddddddd
-test1fddddddddddaaaaaaaaaaaaaaaaaa
-test54
-test1fddddddddddaaaaaaaaaaaaaaaaaa
-test1
-test54
-test1
-test1fddddddddddaaaaaaaaaaaaaaaaaa
-test1
-test4
-test54 444 44 4 
-test1
+ls
+cat
+echo
+ls
+pwd
+echo
+cd
+pwd
+export
+unset
+env
+exit
+pp
+o ooo 
+o 
+oooooooooo oooooooooooooo oo o oo o 
+ls>>pwd
+ls
+[wd
+pwd
+;
+echo
+echo test
+echo
+echo "test"
+echo
+test
+echo
+test
+unset
+export
+pwd
+echo
+echo test
+echo "test"
+echo test
+echo test >> test2
+echo test
+echo test test
+echo hh
+echo hh >> test
+echo test
+echo 42
+echo haha
+echo 42
+echo "test"
+echo "\"test"
+echo test
+echo a
+echo a >> 1234
+echo 1234 >> 1235
+echo "test4545" >> testtest
