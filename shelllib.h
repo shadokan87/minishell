@@ -8,6 +8,7 @@
 # define KEYLEFT "\033[D"
 # define KEYRIGHT "\033[C"
 # define BUFFER_SIZE 4
+# define PIPEDEST "./srcs/pipe.msh"
 # define LS "ls"
 # include <unistd.h>
 # include <limits.h>

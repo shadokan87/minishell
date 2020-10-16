@@ -14,19 +14,52 @@ typedef struct	s_var
 	char	*command;
 	char	*command_queue;
 	char	*to_free;
+	char	**options;
 	int		shell;
 	int		fd;
 	int		gfd;
 	int		cursor;
 	int		cursor_pos;
+	int		new_line;
 	int		debug;
 	int		launch_status;
 	int		h_state;
+	int		pfd;
+	int		pipe_status;
+	int		saved_stdout;
 	t_queue	*history;
 	t_queue *h_head;
 	t_queue *h_tail;
 	t_queue *display_pos;
 }				t_var;
+
+int		redir_fd(int from, int to)
+{
+	if (from == -1 || to == -1)
+		return (-1);
+	else if (!(dup2(dup(from), to)))
+		return (-1);
+	return (to);
+}
+
+int		open_pipe(t_var *var)
+{
+	int save;
+
+	save = -1;
+	if ((var->pfd = open(PIPEDEST, O_CREAT | O_RDWR | O_TRUNC)) == -1)
+		return (0);
+	if ((save = redir_fd(var->pfd, STDOUT_FILENO) == -1))
+		return (0);
+	var->pipe_status = 1;
+	return (save);
+}
+
+void	close_pipe(t_var *var)
+{
+	dup2(var->saved_stdout, STDOUT_FILENO);
+	close(var->pfd);
+}
 
 static char	*strndup(char *str, int len)
 {
@@ -141,7 +174,7 @@ void	commandPwd()
 	ft_fprintf(STDOUT_FILENO, "\n%s", pwd);
 }
 
-int	initShell(void)
+int	initShell(t_var *var)
 {
 	const char *termName;
 	char  *bp;
@@ -155,7 +188,8 @@ int	initShell(void)
 		closeTerminal();
 	tgetent(bp, terminal);
 	free(bp);
-	ft_fprintf(1, "\n");
+	if (var->new_line)
+		ft_fprintf(1, "\n");
 	ft_fprintf(1, "minishell");
 	ft_fprintf(1, "_> ");
 	return (1);
@@ -183,8 +217,9 @@ void	test(void)
 	tcgetattr(STDIN_FILENO, &orig);
 }
 
-void	noncanon(void)
-{	
+void	noncanon(t_var *var)
+{
+	var->new_line = 1;
 	tcgetattr(STDIN_FILENO, &orig);
 	atexit(test);
 	canon = orig;
@@ -201,6 +236,7 @@ void	init_struct(t_var *var, t_queue **queue, t_queue **head)
 	*queue = NULL;
 	*head = NULL;
 	var->gfd = 0;
+	var->pipe_status = 0;
 }
 
 t_queue *get_tail(t_queue **head)
@@ -256,7 +292,8 @@ int		update_history(t_var *var)
 
 void	reset(t_var *var, t_queue **queue, t_queue **head)
 {
-	initShell();
+	initShell(var);
+	var->new_line = 1;
 	if (var->command && ft_strlen(var->command))
 		update_history(var);
 	var->command ? free(var->command) : 0;
@@ -274,6 +311,7 @@ int		trim_cmd(t_var *var, t_queue **queue, t_queue **head)
 	i = -1;
 	str = NULL;
 	split = NULL;
+	/*
 	while (var->command[++i])
 	{
 		if (var->command[i] == '&' && var->command[i + 1] != '&')
@@ -283,7 +321,8 @@ int		trim_cmd(t_var *var, t_queue **queue, t_queue **head)
 		else
 			ft_putchar_str(&str, var->command[i]);
 	}
-	split = ft_split(str, '&');
+	*/
+	split = ft_split(var->command, ';');
 	i = 0;
 	while (split[i])
 	{
@@ -332,11 +371,6 @@ int		is_symbol(char c)
 	if (c == '<' || c == '>' || c == '|')
 		return (1);
 	return (0);
-}
-
-int		ft_redir(char **split)
-{
-	
 }
 
 char	*get_cmd_format(char *command)
@@ -397,30 +431,101 @@ int		command_is_valid(char **split)
 	return (ok);
 }
 
-int		get_fd(char **split)
+void	get_fd(char **split, t_var *var)
+{
+
+}
+
+int		symbol_is_present(char **split)
 {
 	int i;
 
 	i = 0;
 	while (split[i])
 	{
-		if (ft_strcmp(split[i], ">>") && split[i + 1])
-			return (open(split[i + 1], O_WRONLY | O_APPEND | O_CREAT));
+		if (get_symbol_type(split[i]) != -1)
+			return (1);
 		i++;
 	}
-	return (STDOUT_FILENO);
+	return (1);
 }
 
-int		__builtin_echo(char **split)
+int		split_len(char **split)
 {
-	int	fd;
 	int i;
-	int mode;
 
-	fd = get_fd(split);
+	i = 0;
+	if (!split)
+		return (0);
+	while (split[i])
+		i++;
+	return (i);
 }
 
-int		run_command(char *format)
+int		echo_is_valid(char **split, t_var *var)
+{
+	int i;
+
+	i = 0;
+	if (!symbol_is_present(split) && split_len(split) != 2)
+		return (-1);
+}
+
+int		__builtin_echo(char **split, t_var *var)
+{
+}
+
+int		check_external(char *format, t_var *var, char **split)
+{
+	int pid;
+
+	if ((pid = fork()) == 0)
+	{
+		if (!execve(ft_strjoin("/usr/bin/", split[0]), &split[0], NULL) ||
+			execve(ft_strjoin("/bin/", split[0]), &split[0], NULL))
+			return (0);
+	}
+	wait(NULL);
+	return (1);
+	
+}
+
+void	ft_putchar_str_loop(char **str, char *str2)
+{
+	int i;
+
+	i = -1;
+	while (str2[++i])
+		ft_putchar_str(str, str2[i]);
+}
+
+char	*extract_options(char *format, char **split, t_var *var)
+{
+	int i;
+	int y;
+	char *options;
+
+	i = 0;
+	y = 0;
+	options = NULL;
+	while (split[i])
+	{
+		if (get_symbol_type(split[i]) != -1)
+		{
+			if (options)
+				ft_putchar_str_loop(&options, " ");
+			ft_putchar_str_loop(&options, split[i]);
+			if (split[i + 1])
+				ft_putchar_str_loop(&options, ft_strjoin(" ", split[i + 1]));
+		}
+		i++;
+	}
+	DEBUG "\nOptions: %s", options);
+	exit (0);
+	return (format);
+}
+
+int		run_command(char *format, t_var *var)
 {
 	char **split;
 	int i;
@@ -430,10 +535,8 @@ int		run_command(char *format)
 	ret = 0;
 	split = NULL;
 	split = ft_split(format, ' ');
-	if (!(ret = command_is_valid(split)))
-		return (0);
-	if (ft_strcmp("echo", split[0]))
-		__builtin_echo(split);
+	format = extract_options(format, split, var);
+	check_external(format, var, split);
 	return (ret);
 }
 
@@ -442,7 +545,7 @@ int		execute_command(t_var *var, t_queue **queue, t_queue **head, char *command)
 	char *format;
 
 	format = NULL;
-	return (run_command(format = get_cmd_format(command)));
+	return (run_command(format = get_cmd_format(command), var));
 }
 
 int		process_cmd(t_var *var, t_queue **queue, t_queue **head)
@@ -678,8 +781,8 @@ int	main(int argc, char **argv)
 	t_queue *head;
 	t_queue *print;
 
-	noncanon();
-	initShell();
+	noncanon(&var);
+	initShell(&var);
 	init_struct(&var, &queue, &head);
 	init_history(&var);
 	while (1)
