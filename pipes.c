@@ -1,8 +1,7 @@
 
-#include <unistd.h>
-#include <fcntl.h>
+#include "shelllib.h"
 
-int	redir_fd(int from, int to)
+int		redir_fd(int from, int to)
 {
 	if (from == -1 || to == -1)
 		return (-1);
@@ -11,24 +10,37 @@ int	redir_fd(int from, int to)
 	return (to);
 }
 
-int		open_pipe()
+int		fd_from_to(int source, int target)
 {
-	int fd;
-	int save;
-
-	save = -1;
-	if ((fd = open("./srcs/pipe.msh", O_CREAT | O_RDWR | O_TRUNC)) == -1)
+	if (!(dup2(dup(source), target)))
 		return (0);
-	if ((save = redir_fd(fd, STDOUT_FILENO) == -1))
-		return (0);
+	return (1);
 }
 
-int		close_pipe()
+int     open_pipe(int pipedest)
 {
-	
+	fd_from_to(pipedest, STDOUT_FILENO);
+	fd_from_to(pipedest, STDIN_FILENO);
 }
 
-int	main(void)
+int	main(int argc, char **argv)
 {
+	int new_stdout;
+	int saved_stdout;
+	int saved_stdin;
+	int pid;
 
+	new_stdout = -1;
+	if ((new_stdout = open("./testredir", O_CREAT | O_RDWR | O_APPEND)) == -1)
+		return (0);
+	saved_stdout = dup(STDOUT_FILENO);
+	saved_stdin = dup(STDIN_FILENO);
+	open_pipe(new_stdout);
+	printf("test");
+	if ((pid = fork()) == 0)
+	{
+		if (!execve(ft_strjoin("/usr/bin/", argv[1]), &argv[1], NULL))
+		return (0);
+	}
+	wait(NULL);
 }

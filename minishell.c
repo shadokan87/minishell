@@ -27,6 +27,8 @@ typedef struct	s_var
 	int		pfd;
 	int		pipe_status;
 	int		saved_stdout;
+	int		saved_stdin;
+	int		execute_state;
 	t_queue	*history;
 	t_queue *h_head;
 	t_queue *h_tail;
@@ -42,23 +44,32 @@ int		redir_fd(int from, int to)
 	return (to);
 }
 
-int		open_pipe(t_var *var)
+void	close_pipe(t_var *var, int read, int write)
 {
-	int save;
-
-	save = -1;
-	if ((var->pfd = open(PIPEDEST, O_CREAT | O_RDWR | O_TRUNC)) == -1)
-		return (0);
-	if ((save = redir_fd(var->pfd, STDOUT_FILENO) == -1))
-		return (0);
-	var->pipe_status = 1;
-	return (save);
+	if (write == 1)
+		dup2(var->saved_stdout, STDOUT_FILENO);
+	if (read == 1)
+		dup2(var->saved_stdin, STDIN_FILENO);
+	close(var->pfd);
 }
 
-void	close_pipe(t_var *var)
+int		open_pipe(t_var *var, int read, int write)
 {
-	dup2(var->saved_stdout, STDOUT_FILENO);
-	close(var->pfd);
+	if ((var->pfd = open(PIPEDEST, O_CREAT | O_RDWR | O_TRUNC)) == -1)
+		return (0);
+	if (write == 1 && redir_fd(var->pfd, STDOUT_FILENO) == -1)
+		return (0);
+	if (read == 1 && redir_fd(STDOUT_FILENO, STDIN_FILENO) == -1)
+	{
+		close_pipe(var, 1, 1);
+		return (0);
+	}
+	if (read && write)
+		var->pipe_status = 11;
+	else if (read && !write)
+		var->pipe_status = 10;
+	else if (!read && write)
+		var->pipe_status = 1;
 }
 
 static char	*strndup(char *str, int len)
@@ -147,6 +158,7 @@ void	*add_to_head(t_queue **head, char *str)
 	head2->prev = new;
 	new->next = head2;
 	head2 = new;
+	free(*head);
 	*head = head2;
 }
 
@@ -219,6 +231,8 @@ void	test(void)
 
 void	noncanon(t_var *var)
 {
+	var->saved_stdout = dup(STDOUT_FILENO);
+	var->saved_stdin = dup(STDIN_FILENO);
 	var->new_line = 1;
 	tcgetattr(STDIN_FILENO, &orig);
 	atexit(test);
@@ -462,20 +476,7 @@ int		split_len(char **split)
 	return (i);
 }
 
-int		echo_is_valid(char **split, t_var *var)
-{
-	int i;
-
-	i = 0;
-	if (!symbol_is_present(split) && split_len(split) != 2)
-		return (-1);
-}
-
-int		__builtin_echo(char **split, t_var *var)
-{
-}
-
-int		check_external(char *format, t_var *var, char **split)
+int		check_external(t_var *var, char **split)
 {
 	int pid;
 
@@ -483,7 +484,10 @@ int		check_external(char *format, t_var *var, char **split)
 	{
 		if (!execve(ft_strjoin("/usr/bin/", split[0]), &split[0], NULL) ||
 			execve(ft_strjoin("/bin/", split[0]), &split[0], NULL))
+		{
+			throw_error("\nCouldn't find following command: ", split[0]);
 			return (0);
+		}
 	}
 	wait(NULL);
 	return (1);
@@ -499,15 +503,81 @@ void	ft_putchar_str_loop(char **str, char *str2)
 		ft_putchar_str(str, str2[i]);
 }
 
-char	*extract_options(char *format, char **split, t_var *var)
+int		free_split(char ***split)
+{
+	int i;
+	char **to_free;
+
+	i = 0;
+	to_free = NULL;
+	to_free = *split;
+	if (!to_free)
+		return (0);
+	while (to_free[i])
+	{
+		to_free[i] ? free(to_free[i]) : 0;
+		i++;
+	}
+	to_free ? free(to_free) : 0;
+	to_free = NULL;
+	*split = to_free;
+	return (1);
+}
+
+void	Debug_print_options(t_var *var)
+{
+	int i;
+
+	i = 0;
+	DEBUG "\nOptions: " );
+	if (!var->options)
+	{
+		DEBUG "no options !");
+		return ;
+	}
+	while (var->options[i])
+	{
+		DEBUG "%s ", var->options[i]);
+		i++;
+	}
+}
+
+void	Debug_print_split(char **split, char *name)
+{
+	int i;
+
+	i = 0;
+	if (!name)
+	{
+		DEBUG "No split name !");
+		return ;
+	}
+	DEBUG "\n%s: " , name);
+	if (!split)
+	{
+		DEBUG "Split is NULL");
+		return ;
+	}
+	while (split[i])
+	{
+		DEBUG "%s ", split[i]);
+		i++;
+	}
+}
+
+char	**extract_options(char *format, t_var *var)
 {
 	int i;
 	int y;
 	char *options;
+	char **split;
+	char *ret;
 
 	i = 0;
 	y = 0;
 	options = NULL;
+	split = ft_split(format, ' ');
+	ret = NULL;
 	while (split[i])
 	{
 		if (get_symbol_type(split[i]) != -1)
@@ -515,29 +585,154 @@ char	*extract_options(char *format, char **split, t_var *var)
 			if (options)
 				ft_putchar_str_loop(&options, " ");
 			ft_putchar_str_loop(&options, split[i]);
-			if (split[i + 1])
-				ft_putchar_str_loop(&options, ft_strjoin(" ", split[i + 1]));
+			if (split[i + 1] && get_symbol_type(split[i + 1]) == -1)
+			{
+				i++;
+				ft_putchar_str_loop(&options, ft_strjoin(" ", split[i]));
+			}
+		}
+		else
+			ret ? ret = ft_strjoin(ret, ft_strjoin(" ", split[i])) : ft_putchar_str_loop(&ret, split[i]);
+		i++;
+	}
+	options ? var->options = ft_split(options, ' ') : 0;
+	options ? free(options) : 0;
+	split ? free_split(&split) : 0;
+	return (ft_split(ret, ' '));
+}
+
+int		set_redir(t_var *var)
+{
+	
+}
+
+int		set_pipe(t_var *var, int i)
+{
+
+}
+
+void	add_after_head(t_queue **head, char *str)
+{
+	t_queue *head2;
+	t_queue *new;
+	t_queue *tmp;
+	
+	new = add(str);
+	head2 = NULL;
+	head2 = *head;
+	if (head2->next)
+	{
+		head2->prev = new;
+		new->next = head2->next;
+		head2->next = new;
+		free(*head);
+		*head = head2;
+	}
+	else
+	{
+		head2->next = new;
+		new->prev = head2;
+		free(*head);
+		*head = head2;
+	}
+}
+
+int		get_options(t_var *var, t_queue **queue, t_queue **head)
+{
+	int i;
+	int ret;
+	t_queue *debug;
+
+	i = 0;
+	ret = -1;
+	if (!var->options)
+		return (0);
+	while (var->options[i])
+	{
+		if ((ret = get_symbol_type(var->options[i])) != -1)
+		{
+			if (!var->options[i + 1])
+			{
+				if (var->pipe_status)
+					close_pipe(var, 1, 1);
+				throw_error("\nFollowing builtin needs one argument: ", var->options[i]);
+				return (-1);
+			}
 		}
 		i++;
 	}
-	DEBUG "\nOptions: %s", options);
-	exit (0);
-	return (format);
+	return (1);
 }
 
-int		run_command(char *format, t_var *var)
+void	stop_execute(char *message, char *src, t_var *var)
+{
+	if (message || src)
+		throw_error(message, src);
+	free_split(&var->options);
+}
+
+int		fd_is_dir(char *path)
+{
+	int fd;
+
+	fd = open(path, O_RDWR);
+	if (fd == -1)
+		return (-1);
+	close(fd);
+	return (1);
+}
+
+int		__builtin_redir(t_var *var, char **split, int i, int mode)
+{
+	int fd;
+
+	fd = -1;
+	if (mode == -1 && !redir_fd(fd = open(var->options
+	[i + 1], O_CREAT | O_RDWR | O_TRUNC), STDOUT_FILENO))
+		stop_execute("\nCouldn't create/acess/find: ", var->options[i + 1], var);
+	else if (mode && !redir_fd(fd = open(var->options
+	[i + 1], O_CREAT | O_RDWR | mode), STDOUT_FILENO))
+		stop_execute("\nCouldn't create/acess/find: ", var->options[i + 1], var);
+	else if (check_external(var, split))
+		stop_execute(NULL, NULL, var);
+	else
+		free_split(&var->options);
+	close_pipe(var, 1, 1);
+	close(fd);
+}
+
+int		execute_options(t_var *var, char **split)
+{
+	int i;
+	int symbol_type;
+	int pid;
+
+	i = 0;
+	if (!var->options)
+		return (0);
+	symbol_type = get_symbol_type(var->options[i]);
+	if (symbol_type == 0 || symbol_type == 2)
+		symbol_type == 0 ? __builtin_redir(var, split, i, O_APPEND) : __builtin_redir(var, split, i, -1);
+	var->execute_state++;
+	return (1);
+}
+
+int		run_command(char *format, t_var *var, t_queue **queue, t_queue **head)
 {
 	char **split;
 	int i;
 	int	ret;
 
+	var->execute_state = 0;
 	i = 0;
 	ret = 0;
 	split = NULL;
-	split = ft_split(format, ' ');
-	format = extract_options(format, split, var);
-	check_external(format, var, split);
-	return (ret);
+	split = extract_options(format, var);
+	if (get_options(var, queue, head) != -1)
+		while (execute_options(var, split));
+	else
+		return (0);
+	return (1);
 }
 
 int		execute_command(t_var *var, t_queue **queue, t_queue **head, char *command)
@@ -545,7 +740,7 @@ int		execute_command(t_var *var, t_queue **queue, t_queue **head, char *command)
 	char *format;
 
 	format = NULL;
-	return (run_command(format = get_cmd_format(command), var));
+	return (run_command(format = get_cmd_format(command), var, queue, head));
 }
 
 int		process_cmd(t_var *var, t_queue **queue, t_queue **head)
@@ -642,9 +837,6 @@ void	substitute(t_var *var)
 
 	right_cut = NULL;
 	left_cut = NULL;
-	//ft_fprintf(STDOUT_FILENO, "\b \b");
-	//clear_prompt(var);
-	//ft_fprintf(STDOUT_FILENO, "%s", var->command);
 	left_cut = strndup(var->command, var->cursor - 1);
 	right_cut = ft_strdup(var->command + var->cursor);
 	var->cursor_pos = var->cursor - 1;
