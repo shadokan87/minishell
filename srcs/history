@@ -361,3 +361,36 @@ ls >> testls
 ls > testerr
 ls > testls
 ls >> testls
+ls
+ls >> testls2
+ls >> testerr
+mkdir reject
+ls >> reject
+mkdir reject
+pwd
+ls
+ls >> testls
+ls >> testerr
+ls >> testesddfsdf
+ls >> 
+ls > testls
+ls >> testls
+ls > testls
+ls -l >> testls
+ls
+ls >> testls
+ls -l >> testls
+who > users
+who >> users
+who > users
+who >> users
+extit
+who > users
+who >> users
+who > users
+who >> users
+who users
+cat append
+ls > work
+ls -l > work
+cat work

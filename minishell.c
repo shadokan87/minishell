@@ -35,13 +35,12 @@ typedef struct	s_var
 	t_queue *display_pos;
 }				t_var;
 
-int		redir_fd(int from, int to)
+int		redir_fd(int source, int target)
 {
-	if (from == -1 || to == -1)
+	if (target == -1 || source == -1)
 		return (-1);
-	else if (!(dup2(dup(from), to)))
-		return (-1);
-	return (to);
+	dup2(dup(source), target);
+	return (source);
 }
 
 void	close_pipe(t_var *var, int read, int write)
@@ -485,6 +484,7 @@ int		check_external(t_var *var, char **split)
 		if (!execve(ft_strjoin("/usr/bin/", split[0]), &split[0], NULL) ||
 			execve(ft_strjoin("/bin/", split[0]), &split[0], NULL))
 		{
+			close_pipe(var, 1, 1);
 			throw_error("\nCouldn't find following command: ", split[0]);
 			return (0);
 		}
@@ -664,41 +664,58 @@ int		get_options(t_var *var, t_queue **queue, t_queue **head)
 	return (1);
 }
 
-void	stop_execute(char *message, char *src, t_var *var)
+int		stop_execute(char *message, char *src, t_var *var)
 {
 	if (message || src)
 		throw_error(message, src);
 	free_split(&var->options);
+	return (0);
 }
 
-int		fd_is_dir(char *path)
+int		is_dir(char *path)
+{
+	struct stat buff;
+
+	if ((stat(path, &buff)) == 0)
+	{
+		if (buff.st_mode & S_IFDIR)
+			return (1);
+	}
+	return (0);
+}
+
+int		__builtin_trunc_redir(t_var *var, int i)
 {
 	int fd;
 
-	fd = open(path, O_RDWR);
-	if (fd == -1)
-		return (-1);
-	close(fd);
-	return (1);
+	return (redir_fd(fd = open(var->options[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0666)
+, STDOUT_FILENO));
 }
 
-int		__builtin_redir(t_var *var, char **split, int i, int mode)
+int		__builtin_append_redir(t_var *var, int i)
 {
 	int fd;
 
-	fd = -1;
-	if (mode == -1 && !redir_fd(fd = open(var->options
-	[i + 1], O_CREAT | O_RDWR | O_TRUNC), STDOUT_FILENO))
-		stop_execute("\nCouldn't create/acess/find: ", var->options[i + 1], var);
-	else if (mode && !redir_fd(fd = open(var->options
-	[i + 1], O_CREAT | O_RDWR | mode), STDOUT_FILENO))
-		stop_execute("\nCouldn't create/acess/find: ", var->options[i + 1], var);
-	else if (check_external(var, split))
-		stop_execute(NULL, NULL, var);
+	return (redir_fd(fd = open(var->options[i + 1], O_WRONLY | O_CREAT | O_APPEND, 0666)
+, STDOUT_FILENO));
+}
+
+int		__builtin_redir(t_var *var, char **split, int i, int symbol)
+{
+	int fd;
+	//Debug_print_options(var);
+	if (symbol != 0 && symbol != 2)
+		return (0);
+	if (symbol == 2)
+		fd = __builtin_trunc_redir(var, i);
 	else
+		fd = __builtin_append_redir(var, i);
+	check_external(var, split);
+	close(fd);
+	if (!var->options[i + 2])
 		free_split(&var->options);
 	close_pipe(var, 1, 1);
-	close(fd);
+	return (1);
 }
 
 int		execute_options(t_var *var, char **split)
@@ -711,8 +728,7 @@ int		execute_options(t_var *var, char **split)
 	if (!var->options)
 		return (0);
 	symbol_type = get_symbol_type(var->options[i]);
-	if (symbol_type == 0 || symbol_type == 2)
-		symbol_type == 0 ? __builtin_redir(var, split, i, O_APPEND) : __builtin_redir(var, split, i, -1);
+	__builtin_redir(var, split, i, symbol_type);
 	var->execute_state++;
 	return (1);
 }

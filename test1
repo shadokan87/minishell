@@ -10,7 +10,6 @@ gnl_working
 libft
 linked_list.c
 minishell.c
-no_append
 pipes.c
 redirtest
 shelllib.h
@@ -21,7 +20,6 @@ test1
 test222323
 test2c
 test4547
-testapp
 testerr
 testls
 testls2
@@ -30,4 +28,3 @@ tests
 testtest
 users
 what
-work

@@ -9,6 +9,8 @@
 # define KEYRIGHT "\033[C"
 # define BUFFER_SIZE 4
 # define PIPEDEST "./srcs/pipe.msh"
+# define FD_NO_CREAT_NL "\nCouldn't create/access: "
+# define ISDIR_NL "\nIs directory: "
 # define LS "ls"
 # include <unistd.h>
 # include <limits.h>

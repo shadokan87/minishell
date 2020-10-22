@@ -1,2 +1,111 @@
-
-Is a directory: "testls"
+TEST##1235
+]
+a.out
+aaa
+echotest
+execve.c
+ft_fprintf
+gnl_test.c
+gnl_working
+libft
+linked_list.c
+minishell.c
+pipes.c
+shelllib.h
+srcs
+test
+test.c
+test222323
+test2c
+test4547
+testerr
+testls
+testls2
+testredir
+tests
+testtest
+what
+total 296
+-rwxr-xr-x   1 shadokan87  staff      4 Oct 20 12:14 1235
+-rwxr-xr-x   1 shadokan87  staff   1900 Oct 20 12:14 ]
+-rwxr-xr-x   1 shadokan87  staff  48652 Oct 21 10:05 a.out
+-rw-r--r--   1 shadokan87  staff      5 Oct 20 12:14 aaa
+-rwxr-xr-x   1 shadokan87  staff      5 Oct 20 12:14 echotest
+-rw-r--r--   1 shadokan87  staff    251 Oct 20 12:14 execve.c
+drwxr-xr-x  52 shadokan87  staff   1664 Oct 20 12:14 ft_fprintf
+-rwxr-xr-x   1 shadokan87  staff    133 Oct 20 12:14 gnl_test.c
+drwxr-xr-x   5 shadokan87  staff    160 Oct 20 12:14 gnl_working
+drwxr-xr-x  41 shadokan87  staff   1312 Oct 20 12:15 libft
+-rwxr-xr-x   1 shadokan87  staff   1646 Oct 20 12:14 linked_list.c
+-rwxr-xr-x   1 shadokan87  staff  17739 Oct 21 10:05 minishell.c
+-rw-r--r--   1 shadokan87  staff    831 Oct 20 12:14 pipes.c
+-rwxr-xr-x   1 shadokan87  staff    796 Oct 20 13:39 shelllib.h
+drwxr-xr-x   4 shadokan87  staff    128 Oct 20 12:14 srcs
+-rwxr-xr-x   1 shadokan87  staff    398 Oct 21 08:38 test
+-rwxr-xr-x   1 shadokan87  staff    567 Oct 20 12:14 test.c
+-rw-r--r--   1 shadokan87  staff     64 Oct 20 12:14 test222323
+-rwxr-xr-x   1 shadokan87  staff   1688 Oct 20 12:14 test2c
+-rwxrwxrwx   1 shadokan87  staff      8 Oct 21 09:32 test4547
+drwxr-xr-x   2 shadokan87  staff     64 Oct 20 12:54 testerr
+-rwxrwxrwx   1 shadokan87  staff    223 Oct 21 10:05 testls
+-rwxrwxrwx   1 shadokan87  staff    208 Oct 21 08:22 testls2
+-rw-r--r--   1 shadokan87  staff     37 Oct 20 12:14 testredir
+-rwxr-xr-x   1 shadokan87  staff    206 Oct 20 12:14 tests
+-rwxr-xr-x   1 shadokan87  staff      4 Oct 20 12:14 testtest
+-rwxr-xr-x   1 shadokan87  staff     42 Oct 20 12:14 what
+total 296
+-rwxr-xr-x   1 shadokan87  staff      4 Oct 20 12:14 1235
+-rwxr-xr-x   1 shadokan87  staff   1900 Oct 20 12:14 ]
+-rwxr-xr-x   1 shadokan87  staff  48652 Oct 21 10:08 a.out
+-rw-r--r--   1 shadokan87  staff      5 Oct 20 12:14 aaa
+-rwxr-xr-x   1 shadokan87  staff      5 Oct 20 12:14 echotest
+-rw-r--r--   1 shadokan87  staff    251 Oct 20 12:14 execve.c
+drwxr-xr-x  52 shadokan87  staff   1664 Oct 20 12:14 ft_fprintf
+-rwxr-xr-x   1 shadokan87  staff    133 Oct 20 12:14 gnl_test.c
+drwxr-xr-x   5 shadokan87  staff    160 Oct 20 12:14 gnl_working
+drwxr-xr-x  41 shadokan87  staff   1312 Oct 20 12:15 libft
+-rwxr-xr-x   1 shadokan87  staff   1646 Oct 20 12:14 linked_list.c
+-rwxr-xr-x   1 shadokan87  staff  17715 Oct 21 10:08 minishell.c
+-rw-r--r--   1 shadokan87  staff    831 Oct 20 12:14 pipes.c
+-rwxr-xr-x   1 shadokan87  staff    796 Oct 20 13:39 shelllib.h
+drwxr-xr-x   4 shadokan87  staff    128 Oct 20 12:14 srcs
+-rwxr-xr-x   1 shadokan87  staff    398 Oct 21 08:38 test
+-rwxr-xr-x   1 shadokan87  staff    567 Oct 20 12:14 test.c
+-rw-r--r--   1 shadokan87  staff     64 Oct 20 12:14 test222323
+-rwxr-xr-x   1 shadokan87  staff   1688 Oct 20 12:14 test2c
+-rwxrwxrwx   1 shadokan87  staff      8 Oct 21 09:32 test4547
+drwxr-xr-x   2 shadokan87  staff     64 Oct 20 12:54 testerr
+-rwxrwxrwx   1 shadokan87  staff   1881 Oct 21 10:06 testls
+-rwxrwxrwx   1 shadokan87  staff    208 Oct 21 08:22 testls2
+-rw-r--r--   1 shadokan87  staff     37 Oct 20 12:14 testredir
+-rwxr-xr-x   1 shadokan87  staff    206 Oct 20 12:14 tests
+-rwxr-xr-x   1 shadokan87  staff      4 Oct 20 12:14 testtest
+-rwxr-xr-x   1 shadokan87  staff     42 Oct 20 12:14 what
+total 296
+-rwxr-xr-x   1 shadokan87  staff      4 Oct 20 12:14 1235
+-rwxr-xr-x   1 shadokan87  staff   1900 Oct 20 12:14 ]
+-rwxr-xr-x   1 shadokan87  staff  48652 Oct 21 10:08 a.out
+-rw-r--r--   1 shadokan87  staff      5 Oct 20 12:14 aaa
+-rwxr-xr-x   1 shadokan87  staff      5 Oct 20 12:14 echotest
+-rw-r--r--   1 shadokan87  staff    251 Oct 20 12:14 execve.c
+drwxr-xr-x  52 shadokan87  staff   1664 Oct 20 12:14 ft_fprintf
+-rwxr-xr-x   1 shadokan87  staff    133 Oct 20 12:14 gnl_test.c
+drwxr-xr-x   5 shadokan87  staff    160 Oct 20 12:14 gnl_working
+drwxr-xr-x  41 shadokan87  staff   1312 Oct 20 12:15 libft
+-rwxr-xr-x   1 shadokan87  staff   1646 Oct 20 12:14 linked_list.c
+-rwxr-xr-x   1 shadokan87  staff  17715 Oct 21 10:08 minishell.c
+-rw-r--r--   1 shadokan87  staff    831 Oct 20 12:14 pipes.c
+-rwxr-xr-x   1 shadokan87  staff    796 Oct 20 13:39 shelllib.h
+drwxr-xr-x   4 shadokan87  staff    128 Oct 20 12:14 srcs
+-rwxr-xr-x   1 shadokan87  staff    398 Oct 21 08:38 test
+-rwxr-xr-x   1 shadokan87  staff    567 Oct 20 12:14 test.c
+-rw-r--r--   1 shadokan87  staff     64 Oct 20 12:14 test222323
+-rwxr-xr-x   1 shadokan87  staff   1688 Oct 20 12:14 test2c
+-rwxrwxrwx   1 shadokan87  staff      8 Oct 21 09:32 test4547
+drwxr-xr-x   2 shadokan87  staff     64 Oct 20 12:54 testerr
+-rwxrwxrwx   1 shadokan87  staff   3539 Oct 21 10:08 testls
+-rwxrwxrwx   1 shadokan87  staff    208 Oct 21 08:22 testls2
+-rw-r--r--   1 shadokan87  staff     37 Oct 20 12:14 testredir
+-rwxr-xr-x   1 shadokan87  staff    206 Oct 20 12:14 tests
+-rwxr-xr-x   1 shadokan87  staff      4 Oct 20 12:14 testtest
+-rwxr-xr-x   1 shadokan87  staff     42 Oct 20 12:14 what
