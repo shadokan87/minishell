@@ -35,6 +35,7 @@ typedef struct	s_t_curr
 
 }				t_curr;
 
+int				is_printable(char c);
 int				ft_nbrlen(int n);
 int				ft_nbrlen_u(unsigned int n);
 int				ft_fprintf(int fd, const char *str, ...);
@@ -48,6 +49,7 @@ int				print_struct(t_curr *flag, va_list args);
 int				c_str(char *str, char c);
 int				is_num(char c);
 int				is_arg(char c);
+int				ft_strcmp(char *str1, char *str2);
 void			ft_putstr(int fd, char *str);
 void			ft_putnbr(int fd, int n);
 void			ft_putptr(unsigned long int ptr, t_curr *flag);

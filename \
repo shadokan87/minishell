@@ -1,0 +1,206 @@
+
+#include "shelllib.h"
+#define DEBUG ft_fprintf(STDOUT_FILENO, 
+
+typedef struct s_queue
+{
+	char *command;
+	struct s_queue * next;
+	struct s_queue * prev;
+}	t_queue;
+
+typedef struct s_navigate
+{
+	int cursor;
+} t_navigate;
+
+typedef struct s_input
+{
+	char buff[BUFF_SIZE];
+	char *on_screen_input;
+	int prompt_status;
+}	t_input;
+
+typedef struct s_global
+{
+	t_input user_input;
+	t_navigate nav;
+	t_queue *queue;
+	t_queue *head;
+	int saved_stdout;
+	int saved_stdin;
+	int run_status;
+	char *term_name;
+	
+} t_global;
+
+int	init_shell(t_global *global)
+{
+	const char *termName;
+	char *bp;
+	char *terminal;
+	
+	if (!(bp = malloc(sizeof(*bp))))
+		return (0);
+	if (!(terminal = getenv(global->term_name)))
+		return (0);
+	tgetent(bp, terminal);
+	free(bp);
+	ft_fprintf(1, global->term_name);
+}
+
+void	reset_attr()
+{
+	tcgetattr(STDIN_FILENO, &orig);
+}
+
+void	noncanon(t_global *global)
+{
+	tcgetattr(STDIN_FILENO, &orig);
+	atexit(reset_attr);
+	canon = orig;
+ 	canon.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &canon);
+}
+
+void	init_struct(t_global *global, char *term_name)
+{
+	global->term_name = ft_strdup(term_name);
+	global->run_status = 1;
+	global->nav.cursor = 0;
+	global->user_input.on_screen_input = NULL;
+	global->queue = NULL;
+	global->head = NULL;
+	global->user_input.prompt_status = 0;
+}
+
+int		update_cursor_pos(t_global *global, int ret)
+{
+	if (!ret)
+		return (0);
+	DEBUG "%d", ret);
+	global->nav.cursor = ret;
+	//ft_fprintf(STDOUT_FILENO, "%d", global->nav.cursor);
+	return (1);
+}
+
+int		keydown(t_global *global)
+{
+	return (0);
+}
+
+int		keyup(t_global *global)
+{
+	return (0);
+}
+
+int		keyleft(t_global *global)
+{
+	ft_fprintf(STDOUT_FILENO, "%s", KEYLEFT);
+	update_cursor_pos(global, global->nav.cursor - 1);
+	DEBUG "%d", global->nav.cursor);
+	return (0);
+}
+
+void	keyright(t_global *global)
+{
+	ft_fprintf(STDOUT_FILENO, "%s", KEYRIGHT);
+}
+
+int		listen_arrows(t_global *global)
+{
+	if (ft_strcmp(KEYUP, global->user_input.buff))
+		keyup(global);
+	else if (ft_strcmp(KEYDOWN, global->user_input.buff))
+		keydown(global);
+	else if (ft_strcmp(KEYLEFT, global->user_input.buff))
+		keyleft(global);
+	else if (ft_strcmp(KEYRIGHT, global->user_input.buff))
+		keyright(global);
+
+}
+
+int		listen_keys(t_global *global)
+{
+	if (global->user_input.buff[0] == '\033')
+		listen_arrows(global);
+	return (1);
+}
+void	 clear_buff(t_global *global)
+{
+	int i;
+
+	i = -1;
+	while (++i < BUFF_SIZE + 1)
+		global->user_input.buff[i] = '\0';
+}
+void	navigate(t_global *global)
+{
+	if (listen_keys(global))
+		clear_buff(global);
+}
+
+int		get_user_input(t_global *global)
+{
+	int ret;
+
+	ret = 0;
+	ret = read(STDIN_FILENO, &global->user_input.buff, 4);
+	if (is_printable(global->user_input.buff[0]) && global->user_input.buff[0] != 127)
+		global->user_input.on_screen_input = global->user_input.on_screen_input ?
+	ft_strjoin(global->user_input.on_screen_input, global->user_input.buff) : ft_strdup(global->user_input.buff);
+	return (is_printable(global->user_input.buff[0]) ? ret : 0);
+}
+
+int		echo_user_input(t_global *global)
+{
+	int ret;
+
+	ret = 0;
+	if ((ret = global->user_input.buff[0] && global->user_input.buff[0] != '\033'))
+		ft_fprintf(STDOUT_FILENO, "%s", global->user_input.buff);
+	return (ret);
+}
+
+int		overwrite_cursor_pos(t_global *global, int pos)
+{
+	
+}
+
+int		set_prompt_margin(t_global *global)
+{
+	int i;
+
+	i = -1;
+	if (MARGIN <= 0)
+		return (0);
+	while (++i < MARGIN)
+		ft_fprintf(STDOUT_FILENO, "%s", KEYRIGHT);
+	return (i);
+}
+
+int		new_prompt(t_global *global)
+{
+	if (global->user_input.prompt_status)
+	{
+		update_cursor_pos(global, global->nav.cursor + get_user_input(global));
+		echo_user_input(global);
+		return (global->user_input.prompt_status);
+	}
+	ft_fprintf(STDOUT_FILENO, "%s", PROMPT_HEADER);
+	set_prompt_margin(global);
+	global->user_input.prompt_status = 1;
+	return (global->user_input.prompt_status);
+}
+
+int	main(void)
+{
+	t_global global;
+	init_struct(&global, "minishell_v2");
+	noncanon(&global);
+	while (global.run_status)
+	{
+		new_prompt(&global);
+		navigate(&global);
+	}
+}

@@ -1,8 +1,10 @@
 #ifndef SHELLLIB_H
 # define SHELLLIB_H
+# define PROMPT_HEADER "Minishell_v2"
 # define COMMANDS "ls pwd echo export unset cd env exit"
 # define SYMBOL_LIST ">> < > |"
-# define HPATH "srcs/history"
+# define HPATH "srcs/history.msh"
+# define MARGIN 2
 # define KEYUP "\033[A"
 # define KEYDOWN "\033[B"
 # define KEYLEFT "\033[D"
@@ -12,6 +14,7 @@
 # define FD_NO_CREAT_NL "\nCouldn't create/access: "
 # define ISDIR_NL "\nIs directory: "
 # define LS "ls"
+# define BUFF_SIZE 4
 # include <unistd.h>
 # include <limits.h>
 # include <stdlib.h>
