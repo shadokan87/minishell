@@ -25,10 +25,16 @@ typedef struct s_input
 	int input_mode;
 }	t_input;
 
+typedef struct s_submit
+{
+	char *command;
+}	t_submit;
+
 typedef struct s_global
 {
 	t_input user_input;
 	t_navigate nav;
+	t_submit sub;
 	t_queue *history;
 	t_queue *head;
 	t_queue *tail;

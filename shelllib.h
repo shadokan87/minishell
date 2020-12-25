@@ -2,7 +2,11 @@
 # define SHELLLIB_H
 # define PROMPT_HEADER "Minishell_v2"
 # define COMMANDS "ls pwd echo export unset cd env exit"
-# define SYMBOL_LIST ">> < > |"
+# define SYMBOL_LIST "> | < >> || << &&"
+# define SINGLE_SYMBOL_END 2
+# define SINGLE_SYMBOL_START 0
+# define DOUBLE_SYMBOL_START 3
+# define DOUBLE_SYMBOL_END 6
 # define HPATH "srcs/history.msh"
 # define MARGIN 2
 # define KEYUP "\033[A"
