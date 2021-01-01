@@ -20,3 +20,78 @@ test
 aaaaaa
 (null)
 test
+ls
+l;s
+ls
+ls > test
+ls > test
+ls>test
+ls>test
+ls>test
+ls>test
+(null)
+(null)
+(null)
+a
+ls
+ls>test
+ls|grep "test"
+ls|grep "test"
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls test test | ls
+ls test test | ls
+ls|test
+ls && (test && test) | test
+ls && (test && test) | test
+ls && (test && test) | test
+ls && (test && test) | test
+ls && (test && test) | test
+ls && (test && test) | test
+ls && (test && test) | test2
+ls && (test && test) | test2 | test3
+ls && (test && test) | test2 
+ls|test
+ls|test
+ls|tes
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls | test
+ls|test
+ls|test
+ls | test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test
+ls|test

@@ -5,8 +5,8 @@
 typedef struct s_queue
 {
 	char *command;
-	int read;
-	int output;
+	int read_mode;
+	int write_mode;
 	struct s_queue * n;
 	struct s_queue * p;
 }	t_queue;
@@ -28,6 +28,9 @@ typedef struct s_input
 typedef struct s_submit
 {
 	char *command;
+	t_queue *cmd_q;
+	t_queue *head;
+	t_queue *tail;
 }	t_submit;
 
 typedef struct s_global
@@ -152,6 +155,7 @@ void	init_struct(t_global *global, char *term_name)
 	global->user_input.on_screen_input = NULL;
 	global->user_input.tmp = NULL;
 	global->user_input.prompt_status = 0;
+	global->sub.command = NULL;
 	init_queue(global);
 }
 
@@ -331,10 +335,176 @@ void	navigate(t_global *global)
 		listen_arrows(global);
 }
 
+int     check_single_symbol(char *str, int i)
+{
+    int y;
+    char **symbols;
+
+    y = SINGLE_SYMBOL_START;
+    symbols = ft_split(SYMBOL_LIST, ' ');
+    while (y <= DOUBLE_SYMBOL_END)
+    {
+        if (symbols[y][0] == str[i] && str[i + 1] != str[i])
+            return (1);
+        y++;
+    }
+    return (0);
+}
+
+int     check_double_symbol(char *str, int i)
+{
+    int y;
+    char **symbols;
+
+    y = DOUBLE_SYMBOL_START;
+    symbols = ft_split(SYMBOL_LIST, ' ');
+    while (y <= DOUBLE_SYMBOL_END)
+    {
+        if (symbols[y][0] == str[i] && symbols[y][1] == str[i + 1])
+            return (1);
+        y++;
+    }
+    return (0);
+}
+
+void	format_cmd(t_global *global)
+{
+	char *str;
+	char *str2;
+	int space;
+	int i;
+
+	str = global->user_input.on_screen_input;
+	str2 = NULL;
+	space = 0;
+	i = 0;
+	while (str[i])
+	{
+        if (check_double_symbol(str, i))
+        {
+            if (str[i - 1] != ' ')
+                ft_putchar_str(&str2, ' ');
+            ft_putchar_str(&str2, str[i]);
+            ft_putchar_str(&str2, str[i + 1]);
+            ft_putchar_str(&str2, ' ');
+            i+=2;
+        }
+        else if (check_single_symbol(str, i))
+        {
+                str[i - 1] != ' ' ? ft_putchar_str(&str2, ' ') : 0;
+                str[i + 1] != ' ' ? space = 1 : 0;
+        }
+        ft_putchar_str(&str2, str[i]);
+        space ? ft_putchar_str(&str2, ' ') : 0;
+        space = 0;
+        i++;
+    }
+	global->sub.command = str2;
+}
+
+int		is_symbol(char *str)
+{
+	int i;
+	char **symbols;
+
+	i = 0;
+	symbols = ft_split(ft_strdup(SYMBOL_LIST), ' ');
+	while (symbols[i])
+	{
+		if (ft_strcmp(str, symbols[i]))
+			return (i);
+		i++;
+	}
+	return (0);
+}
+
+t_queue *fill_cmd(char *str, int read, int write)
+{
+	t_queue *ret;
+
+	if (!(ret = malloc(sizeof(t_queue))))
+		return (0);
+	ret->command = ft_strdup(str);
+	ret->read_mode = read;
+	ret->write_mode = write;
+	ret->n = NULL;
+	ret->p = NULL;
+	return (ret);
+}
+
+char	*splittostr(char **split, int i)
+{
+	char *ret;
+	int y;
+
+	y = 0;
+	ret = NULL;
+	while (y <= i)
+	{
+		if (!ret)
+			ret = ft_strdup(split[i]);
+	}
+	return (ret);
+}
+
+void	debug_enqueue_cmd(t_global *global)
+{	DEBUG "\n---- CMD QUEUE ----");
+	DEBUG "\n%s", global->sub.head->command);
+}
+
+void	enqueue_cmd(t_global *global, char **split, int i, int read, int write)
+{
+	t_queue *ret;
+	char *ret2;
+
+	ret2 = splittostr(split, i);
+	exit (0);
+	if (!global->sub.head)
+	{
+		global->sub.head = ret;
+		global->sub.tail = global->sub.head;
+		return ;
+	}
+	ret->n = global->sub.head;
+	global->sub.head->p = ret;
+	global->sub.head = ret;
+}
+
+void	cmd_queue(t_global *global)
+{
+	char **split;
+	int i;
+	int ret;
+
+	i = 0;
+	ret = -1;
+	split = ft_split(global->sub.command, ' ');
+	while (split[i])
+	{
+		if ((ret = is_symbol(split[i])))
+		{
+			ret == 1 ? enqueue_cmd(global, split, i - 1, 0, 1) : 0;
+			ret == 1 ? enqueue_cmd(global, split, i + 1, 1, 0) : 0;
+		}
+		i++;
+	}
+}
+
+int		process_cmd(t_global *global)
+{
+	if (!global->user_input.on_screen_input)
+		return (0);
+	global->sub.command = ft_strdup(global->user_input.on_screen_input);
+	format_cmd(global);
+	cmd_queue(global);
+	return (1);
+}
+
 int		submit(t_global *global)
 {
 	add(global, global->user_input.on_screen_input);
 	ft_fprintf(global->history_fd, "%s\n", global->user_input.on_screen_input);
+	process_cmd(global);
 	global->user_input.prompt_status = 0;
 	return (1);
 }
@@ -388,6 +558,14 @@ void	debug2(t_global *global)
 	exit(0);
 }
 
+void	debug_submit(t_global *global)
+{
+	if (!global->sub.command)
+		return ;
+	DEBUG "\nCommand: %s", global->sub.command);
+	exit (0);
+}
+
 int		new_prompt(t_global *global)
 {
 	if (global->user_input.prompt_status)
@@ -407,6 +585,7 @@ int		new_prompt(t_global *global)
 	ft_fprintf(STDOUT_FILENO, "%s", PROMPT_HEADER);
 	set_prompt_margin(global);
 	global->user_input.prompt_status = 1;
+	//debug_submit(global);
 	return (global->user_input.prompt_status);
 }
 

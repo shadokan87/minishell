@@ -1,4 +1,13 @@
 #ifndef SHELLLIB_H
+# define TYPE 0
+# define ID 1
+# define STATE 2
+# define MAIN 0
+# define CMD 1
+# define OR 2
+# define NA 2
+# define FAILURE 0
+# define SUCCESS 1
 # define SHELLLIB_H
 # define PROMPT_HEADER "Minishell_v2"
 # define COMMANDS "ls pwd echo export unset cd env exit"

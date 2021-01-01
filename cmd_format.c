@@ -1,68 +1,46 @@
 #include "shelllib.h"
 
-int		check_single_symbol(char *str, int i)
+typedef struct s_node
 {
-	int y;
-	char **symbols;
+	int nb;
+	struct s_node *div;
+	struct s_node * n;
+}	t_node;
 
-	y = SINGLE_SYMBOL_START;
-	symbols = ft_split(SYMBOL_LIST, ' ');
-	while (y <= DOUBLE_SYMBOL_END)
-	{
-		if (symbols[y][0] == str[i] && str[i + 1] != str[i])
-			return (1);
-		y++;
-	}
-	return (0);
+t_node *fill(int nb)
+{
+	t_node *ret;
+
+	ret = NULL;
+	if (!(ret = malloc(sizeof(t_node))))
+		return (0);
+	ret->nb = nb;
+	return (ret);
 }
 
-int		check_double_symbol(char *str, int i)
+int	main(void)
 {
-	int y;
-	char **symbols;
+	t_node *node;
+	t_node *last;
+	t_node *head;
 
-	y = DOUBLE_SYMBOL_START;
-	symbols = ft_split(SYMBOL_LIST, ' ');
-	while (y <= DOUBLE_SYMBOL_END)
-	{
-		if (symbols[y][0] == str[i] && symbols[y][1] == str[i + 1])
-			return (1);
-		y++;
-	}
+	last = NULL;
+	//
+	node = fill(1);
+	node->n = NULL;
+	node->div = NULL;
+	last = node;
+	head = node;
+	ft_fprintf(1, "%d", last->nb);
+	//
+	node->n = fill(2);
+	last = node->n;
+	ft_fprintf(1, "%d", last->nb);
+	last->div = fill(3);
+	last->div->n = fill(4);
+	ft_fprintf(1, "%d%d", last->div->nb, last->div->n->nb);
+	last->n = fill(5);
+	last = last->n;
+	ft_fprintf(1, "%d", last->nb);
 	return (0);
-}
-
-int	main(int argc, char **argv)
-{
-	char *str;
-	char *str2;
-	int i;
-	int space;
-
-	i = 0;
-	str = argv[1];
-	str2 = NULL;
-	space = 0;
-	while (str[i])
-	{
-		if (check_double_symbol(str, i))
-		{
-			if (str[i - 1] != ' ')
-				ft_putchar_str(&str2, ' ');
-			ft_putchar_str(&str2, str[i]);
-			ft_putchar_str(&str2, str[i + 1]);
-			ft_putchar_str(&str2, ' ');
-			i+=2;
-		}
-		else if (check_single_symbol(str, i))
-		{
-				str[i - 1] != ' ' ? ft_putchar_str(&str2, ' ') : 0;
-				str[i + 1] != ' ' ? space = 1 : 0;
-		}
-		ft_putchar_str(&str2, str[i]);
-		space ? ft_putchar_str(&str2, ' ') : 0;
-		space = 0;
-		i++;
-	}
-	ft_fprintf(1, "%s", str2);
 }
