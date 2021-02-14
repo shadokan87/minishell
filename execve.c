@@ -1,6 +1,7 @@
 
 #include <unistd.h>
 #include <stdio.h>
+#include <sys/wait.h>
 
 int	main(int argc, char **argv)
 {
@@ -10,7 +11,7 @@ int	main(int argc, char **argv)
 	status = 0;
 	if ((pid = fork()) == 0)
 		execve(argv[1], &argv[1], NULL);
-	wait();
+	wait(NULL);
 	write(1, "test", 4);
 	write(1, "test", 4);
 	write(1, "test", 4);

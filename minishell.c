@@ -28,6 +28,9 @@ typedef struct s_input
 typedef struct s_submit
 {
 	char *command;
+	char *to_solve;
+	int lop;
+	int i;
 	t_queue *cmd_q;
 	t_queue *head;
 	t_queue *tail;
@@ -48,12 +51,13 @@ typedef struct s_global
 	int	history_fd;
 	int h_status;
 	char *term_name;
-	
+	char *message;
+	char **exec_path;
 } t_global;
 
 /////////////////
 
-static char *ft_strndup(char *str, int len)
+/*static char *ft_strndup(char *str, int len)
 {
     char    *ret;
     int     i;
@@ -71,7 +75,7 @@ static char *ft_strndup(char *str, int len)
     ret[i] = '\0';
     return (ret);
 }
-
+*/
 ////////////////
 
 int	init_shell(t_global *global)
@@ -156,6 +160,8 @@ void	init_struct(t_global *global, char *term_name)
 	global->user_input.tmp = NULL;
 	global->user_input.prompt_status = 0;
 	global->sub.command = NULL;
+	global->message = NULL;
+	global->exec_path = ft_split(EXEC_PATH, '\n');
 	init_queue(global);
 }
 
@@ -293,7 +299,7 @@ int		add_inside(t_global *global)
 	if (global->user_input.buff[0] == '\n')
 	{	
 		ft_fprintf(STDOUT_FILENO, "\n Historique: %s", global->user_input.tmp);
-		exit (0);
+		//exit (0);
 	}
 	new = ft_strjoin(ft_strjoin(ft_strndup(global->user_input.on_screen_input, global->nav.cursor),
 	global->user_input.buff), &global->user_input.on_screen_input[global->nav.cursor]);
@@ -458,7 +464,7 @@ void	enqueue_cmd(t_global *global, char **split, int i, int read, int write)
 	char *ret2;
 
 	ret2 = splittostr(split, i);
-	exit (0);
+	//exit (0);
 	if (!global->sub.head)
 	{
 		global->sub.head = ret;
@@ -500,13 +506,184 @@ int		process_cmd(t_global *global)
 	return (1);
 }
 
+int check_par(t_global *global)
+{
+    int count;
+    int open;
+    int close;
+    int i;
+    int err;
+
+    i = -1;
+    open = 0;
+    close = 0;
+    err = 1;
+	count = 0;
+    while (global->sub.command[++i] && err)
+    {
+        if (global->sub.command[i] == '(' || global->sub.command[i] == ')')
+            count++;
+        close += global->sub.command[i] == ')' ? 1 : 0;
+        err = close > open ? 0 : err;
+        open += global->sub.command[i] == '(' ? 1 : 0;
+    }
+    err = open != close ? 0 : err;
+    err = count % 2 == 0 ? err : 0;
+    return (err);
+}
+
+int		do_solve(t_global *global)
+{
+	int i;
+	char *str;
+
+	str = global->sub.command;
+	i = -1;
+	while (str[++i])
+	{
+		if (str[i] == '|' && str[i + 1] == '|')
+		{
+			ft_putchar_str(&global->sub.to_solve, '?');
+			i += 2;
+		}
+		if (str[i] == '&' && str[i + 1] == '&')
+		{
+			ft_putchar_str(&global->sub.to_solve, ',');
+			i += 2;
+		}
+		if (str[i] == ')' || str[i] == ';')
+		{
+			ft_putchar_str(&global->sub.to_solve, 27);
+			ft_putchar_str(&global->sub.to_solve, '\n');
+			ft_putchar_str(&global->sub.to_solve, 27);
+		}
+		else if (str[i] != '(')
+			ft_putchar_str(&global->sub.to_solve, str[i]);
+	}
+	return (1);
+}
+
+int		exec_loop(t_global *global, char *str, char *path)
+{
+	int i;
+	char **exec;
+	pid_t pid;
+
+	i = 0;
+	exec = ft_split(str, ' ');
+	if ((pid = fork()) == -1)
+	{
+		global->message = ft_strdup(PID_ERR);
+		return (0);
+	}
+	else if (pid == 0)
+		global->sub.lop = execve(ft_strjoin(path, exec[0]), &exec[0], NULL);
+	if (waitpid(pid, 0, 0) == -1)
+		return (-1);
+	else
+		return (1);
+	return (0);
+
+}
+
+int		is_symbol2(t_global *global, int i)
+{
+	char **symbols;
+	char c;
+	int y;
+	int z;
+	char *str;
+
+	y = 0;
+	z = 0;
+	symbols = ft_split(SYMBOL_LIST, ' ');
+	str = global->sub.command;
+	c = str[i];
+	while (symbols[y])
+	{
+		if (symbols[y][0] == c && str[i + 1] != c)
+		{
+			if (str[i + 1] == '\0' || str[i + 1] == '\n')
+				return (symbols[y][0]);
+			return (1);
+		}
+		if (symbols[y][0] == c && str[i + 1] == c)
+		{
+			if (str[i + 2] == '\0' || str[i + 2] == '\n')
+				return (symbols[y][0]);
+			return (2);
+		}
+		y++;
+	}
+	return (0);
+}
+
+void	exec_all_path(t_global *global, char *str)
+{
+	int i;
+	int ret;
+	char **path;
+
+	i = 0;
+	ret = 0;
+	path = ft_split(EXEC_PATH, '\n');
+	while ((exec_loop(global, str, path[i]) && path[i]))
+	{
+		if (i > 0 && global->sub.lop == 0)
+			break ;
+		i++;
+	}
+}
+
+void	exec_solve(t_global *global)
+{
+	char **split;
+
+	global->sub.i = 0;
+	split = ft_split(global->sub.to_solve, 27);
+	while (global->sub.i < 1)
+	{
+		exec_all_path(global, split[global->sub.i]);
+		global->sub.i++;
+	}
+}	
+
+
+void	check_format(t_global *global)
+{
+	char *str;
+	int i;
+	int ret;
+
+	i = 0;
+	str = NULL;
+	while (global->sub.command[i])
+	{
+		ret = is_symbol2(global, i);
+		ret ? ft_putchar_str(&str, 27) : 0;
+		ft_putchar_str(&str, global->sub.command[i]);
+		ret == 2 ? ft_putchar_str(&str, global->sub.command[i+ 1]) : 0;
+		ret ? ft_putchar_str(&str, 27) : 0;
+		i+= ret == 2 ? 2 : 1;
+	}
+	free(global->sub.command);
+	global->sub.command = str;
+	do_solve(global);
+	exec_solve(global);
+}
+
 int		submit(t_global *global)
 {
-	add(global, global->user_input.on_screen_input);
-	ft_fprintf(global->history_fd, "%s\n", global->user_input.on_screen_input);
-	process_cmd(global);
+	if (global->user_input.on_screen_input)
+	{	
+		add(global, global->user_input.on_screen_input);
+		ft_fprintf(global->history_fd, "%s", global->user_input.on_screen_input);
+		global->sub.command = ft_strdup(global->user_input.on_screen_input);
+		check_format(global);
+		exec_solve(global);
+	}
 	global->user_input.prompt_status = 0;
-	return (1);
+	return (global->message ? 0 : 1);
 }
 
 int		get_user_input(t_global *global)
@@ -566,6 +743,27 @@ void	debug_submit(t_global *global)
 	exit (0);
 }
 
+void	reset_message(t_global *global)
+{
+	if (global->message)
+	{
+		ft_fprintf(STDOUT_FILENO, "%s", global->message);
+		free(global->message);
+		global->message = NULL;
+	}
+	if (global->sub.command)
+	{
+		free(global->sub.command);
+		global->sub.command = NULL;
+	}
+	if (global->sub.to_solve)
+	{
+		free(global->sub.to_solve);
+		global->sub.to_solve = NULL;
+	}
+	global->sub.lop = 0;
+}
+
 int		new_prompt(t_global *global)
 {
 	if (global->user_input.prompt_status)
@@ -578,8 +776,9 @@ int		new_prompt(t_global *global)
 	if (global->user_input.on_screen_input)
 	{
 		free(global->user_input.on_screen_input);
-		global->user_input.on_screen_input = 0;
+		global->user_input.on_screen_input = NULL;
 	}
+	reset_message(global);
 	global->nav.cursor = 0;
 	global->h_pos = NULL;
 	ft_fprintf(STDOUT_FILENO, "%s", PROMPT_HEADER);

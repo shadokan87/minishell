@@ -17,6 +17,8 @@
 # define DOUBLE_SYMBOL_START 3
 # define DOUBLE_SYMBOL_END 6
 # define HPATH "srcs/history.msh"
+# define CPATH "srcs/cache.msh"
+# define EXEC_PATH "/bin/\n/bin/bash/\n/usr/bin/"
 # define MARGIN 2
 # define KEYUP "\033[A"
 # define KEYDOWN "\033[B"
@@ -26,6 +28,8 @@
 # define PIPEDEST "./srcs/pipe.msh"
 # define FD_NO_CREAT_NL "\nCouldn't create/access: "
 # define ISDIR_NL "\nIs directory: "
+# define PAR_ERR "Unbalanced parenthesis.\n"
+# define PID_ERR "Couldn't create pid\n"
 # define LS "ls"
 # define BUFF_SIZE 4
 # include <unistd.h>
@@ -33,6 +37,7 @@
 # include <stdlib.h>
 # include "libft/libft.h"
 # include "ft_fprintf/lprintf.h"
+# include "gnl_working/get_next_line.h"
 # include <sys/types.h>
 # include <sys/stat.h>
 # include <fcntl.h>
