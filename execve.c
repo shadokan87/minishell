@@ -12,7 +12,4 @@ int	main(int argc, char **argv)
 	if ((pid = fork()) == 0)
 		execve(argv[1], &argv[1], NULL);
 	wait(NULL);
-	write(1, "test", 4);
-	write(1, "test", 4);
-	write(1, "test", 4);
 }

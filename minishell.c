@@ -153,6 +153,7 @@ void	init_queue(t_global *global)
 
 void	init_struct(t_global *global, char *term_name)
 {
+	global->sub.i = 0;
 	global->term_name = ft_strdup(term_name);
 	global->run_status = 1;
 	global->nav.cursor = 0;
@@ -563,28 +564,6 @@ int		do_solve(t_global *global)
 	return (1);
 }
 
-int		exec_loop(t_global *global, char *str, char *path)
-{
-	int i;
-	char **exec;
-	pid_t pid;
-
-	i = 0;
-	exec = ft_split(str, ' ');
-	if ((pid = fork()) == -1)
-	{
-		global->message = ft_strdup(PID_ERR);
-		return (0);
-	}
-	else if (pid == 0)
-		global->sub.lop = execve(ft_strjoin(path, exec[0]), &exec[0], NULL);
-	if (waitpid(pid, 0, 0) == -1)
-		return (-1);
-	else
-		return (1);
-	return (0);
-
-}
 
 int		is_symbol2(t_global *global, int i)
 {
@@ -618,34 +597,83 @@ int		is_symbol2(t_global *global, int i)
 	return (0);
 }
 
-void	exec_all_path(t_global *global, char *str)
+int	exec_cmd(t_global *global, char **command, char *path)
 {
-	int i;
-	int ret;
-	char **path;
+	pid_t pid;
 
-	i = 0;
-	ret = 0;
-	path = ft_split(EXEC_PATH, '\n');
-	while ((exec_loop(global, str, path[i]) && path[i]))
+	if ((pid = fork()) < 0)
+		exit (0);
+	if (pid == 0)
 	{
-		if (i > 0 && global->sub.lop == 0)
-			break ;
-		i++;
+		global->sub.lop = execve(ft_strjoin(path, command[0]), &command[0], NULL);
+		return (global->sub.lop);
 	}
+	waitpid(pid, 0, 0);
+	return (global->sub.lop);
 }
 
-void	exec_solve(t_global *global)
+int	exec_loop(t_global *global, char **command)
 {
-	char **split;
+	int i;
+	char **path;
 
-	global->sub.i = 0;
-	split = ft_split(global->sub.to_solve, 27);
-	while (global->sub.i < 1)
+	path = ft_split(EXEC_PATH, '\n');
+	i = 0;
+	while ((exec_cmd(global, command, path[i])) != 0 && path[i])
+		i++;
+	return (global->sub.lop);
+}
+
+int	exec_comma(t_global *global, char **split, char **path)
+{
+	exec_loop(global, ft_split(split[global->sub.i + 1], ' '));
+	global->sub.i += 2;
+	return (global->sub.lop);
+}
+
+int	exec_or(t_global *global, char **split, char **path)
+{
+	if (ft_strcmp(split[global->sub.i - 1], "\n") && global->sub.lop == 0)
 	{
-		exec_all_path(global, split[global->sub.i]);
+		global->sub.i++;
+		while (ft_strcmp(split[global->sub.i - 1], "\n") || !split[global->sub.i])
+			global->sub.i++;
+		return (global->sub.lop);
+	}
+	if (global->sub.lop == 0)
+	{
+		global->sub.i += 2;
+		return (global->sub.lop);
+	}
+	exec_loop(global, ft_split(split[global->sub.i + 1], ' '));
+	global->sub.i += 2;
+	return (global->sub.lop);
+}
+
+int	exec_token(t_global *global, char **split, char **path)
+{
+	if (ft_strcmp(split[global->sub.i], "?"))
+		exec_or(global, split, path);
+	else if (ft_strcmp(split[global->sub.i], ","))
+		exec_comma(global, split, path);
+	else
+	{
+		exec_loop(global, ft_split(split[global->sub.i], ' '));
 		global->sub.i++;
 	}
+	return (global->sub.lop);
+}
+
+int	exec_solve(t_global *global)
+{
+	char **split;
+	char **path;
+
+	global->sub.i = 0;
+	path = ft_split(EXEC_PATH, '\n');
+	split = ft_split(global->sub.to_solve, 27);
+	while (split[global->sub.i])
+		exec_token(global, split, path);
 }	
 
 
@@ -680,7 +708,6 @@ int		submit(t_global *global)
 		ft_fprintf(global->history_fd, "%s", global->user_input.on_screen_input);
 		global->sub.command = ft_strdup(global->user_input.on_screen_input);
 		check_format(global);
-		exec_solve(global);
 	}
 	global->user_input.prompt_status = 0;
 	return (global->message ? 0 : 1);
